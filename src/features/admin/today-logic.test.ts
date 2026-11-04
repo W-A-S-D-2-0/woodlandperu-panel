@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { firstName, greeting, todayLabel, todayTasks, type TodayInput } from './today-logic'
+import { firstName, greeting, pendingPhrase, todayLabel, todayTasks, type TodayInput } from './today-logic'
 
 const calmDay: TodayInput = {
   lowStock: 0,
@@ -48,5 +48,13 @@ describe('saludo', () => {
   it('usa el primer nombre', () => {
     expect(firstName('Brigitte Giraud Durazo')).toBe('Brigitte')
     expect(firstName('  Alex ')).toBe('Alex')
+  })
+})
+
+describe('pendingPhrase', () => {
+  it('concuerda singular y plural; sin pendientes no dice nada', () => {
+    expect(pendingPhrase(4)).toBe('4 cosas por hacer')
+    expect(pendingPhrase(1)).toBe('1 cosa por hacer')
+    expect(pendingPhrase(0)).toBeNull()
   })
 })

@@ -17,7 +17,7 @@ import {
 } from '../conversation-logic'
 import { formatDateTime, plural, quoteStatusLabels, whatsappLink } from '../panel-logic'
 import { adminImage, useAdminAction, useAdminQuery, type QueryState } from '../use-admin-api'
-import { Badge, dangerButton, EmptyState, NextStep, Notice, PageHeader, primaryButtonLarge, QueryView, secondaryButton } from '../ui'
+import { Badge, dangerButton, EmptyState, listSurface, NextStep, Notice, PageHeader, primaryButtonLarge, QueryView, secondaryButton, Segmented } from '../ui'
 
 /** Recarga una consulta cada cierto tiempo mientras la pestaña está visible. */
 function usePolling(reload: () => void, ms: number) {
@@ -55,7 +55,7 @@ function Thread({ conversation }: { conversation: ConversationDetail }) {
         {conversation.messages.map((m) => (
           <li key={m.id} className={`max-w-[88%] rounded-2xl px-4 py-3 text-lg ${bubble[m.role] ?? bubble.system}`}>
             <p className={`text-sm font-bold ${m.role === 'staff' ? 'text-marfil/80' : 'text-carbon-600'}`}>
-              {messageRoleLabels[m.role]} · {formatDateTime(m.createdAt)}
+              {messageRoleLabels[m.role]}, {formatDateTime(m.createdAt)}
             </p>
             <p className="mt-1 whitespace-pre-wrap">{m.body}</p>
             {m.attachment && (
@@ -176,7 +176,7 @@ function DetailView({ id, onBack, onChanged }: { id: string; onBack: () => void;
                   <h2 className="text-3xl">{c.customer?.companyName ?? c.customer?.fullName ?? contactLabel(c)}</h2>
                   <p className="mt-1 text-lg text-carbon-600">
                     {conversationChannelLabels[c.channel]}
-                    {phone ? ` · ${phone}` : ''} · empezó {formatDateTime(c.createdAt)}
+                    {phone ? `, ${phone}` : ''}. Empezó el {formatDateTime(c.createdAt)}
                   </p>
                 </div>
                 <Badge tone={conversationTone(c.status)}>{conversationStatusLabels[c.status]}</Badge>
@@ -194,7 +194,7 @@ function DetailView({ id, onBack, onChanged }: { id: string; onBack: () => void;
                 )}
                 {c.quote && (
                   <Link to={`/cotizaciones/${c.quote.id}`} className={secondaryButton}>
-                    Cotización {c.quote.code} · {quoteStatusLabels[c.quote.status]}
+                    Cotización {c.quote.code}: {quoteStatusLabels[c.quote.status]}
                   </Link>
                 )}
               </div>
@@ -248,7 +248,7 @@ function Inbox({
           {items.length === 0 ? (
             <EmptyState>No hay conversaciones aquí. ¡Todo al día!</EmptyState>
           ) : (
-            <ul className="grid gap-3">
+            <ul className={listSurface}>
               {items.map((item) => {
                 const active = selected === item.id
                 return (
@@ -257,9 +257,7 @@ function Inbox({
                       type="button"
                       onClick={() => onSelect(item.id)}
                       aria-current={active ? 'true' : undefined}
-                      className={`grid w-full gap-2 rounded-2xl border-2 bg-white p-4 text-left transition-colors ${
-                        active ? 'border-nogal' : 'border-linea hover:border-madera/60'
-                      }`}
+                      className={`grid w-full gap-2 p-4 text-left transition-colors sm:px-5 ${active ? 'bg-beige shadow-[inset_4px_0_0_var(--color-nogal)]' : 'hover:bg-marfil'}`}
                     >
                       <span className="flex items-baseline justify-between gap-2">
                         <span className="truncate text-lg font-bold text-carbon">{contactLabel(item)}</span>
@@ -273,7 +271,7 @@ function Inbox({
                       <span className="flex flex-wrap items-center gap-2 text-sm text-carbon-600">
                         <Badge tone={conversationTone(item.status)}>{conversationStatusLabels[item.status]}</Badge>
                         {conversationChannelLabels[item.channel]}
-                        {item.quoteId && ' · con cotización'}
+                        {item.quoteId && ', con cotización'}
                       </span>
                     </button>
                   </li>
@@ -308,27 +306,13 @@ export function ConversationsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader title="Conversaciones" />
       {/* En el celular, al leer una conversación los filtros se ocultan: se vuelve con «Volver a la bandeja». */}
-      <div
-        role="group"
-        aria-label="Ver conversaciones"
-        className={`-mx-4 mt-6 gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 ${selected ? 'hidden lg:flex' : 'flex'}`}
-      >
-        {conversationFilters.map((f) => {
-          const active = f.key === filter.key
-          return (
-            <button
-              key={f.key}
-              type="button"
-              aria-pressed={active}
-              onClick={() => update({ estado: f.key, c: null })}
-              className={`min-h-12 shrink-0 rounded-full border-2 px-5 text-base font-bold transition-colors ${
-                active ? 'border-nogal bg-nogal text-marfil' : 'border-linea bg-white text-nogal hover:border-nogal'
-              }`}
-            >
-              {f.label}
-            </button>
-          )
-        })}
+      <div className={`mt-6 ${selected ? 'hidden lg:block' : ''}`}>
+        <Segmented
+          label="Ver conversaciones"
+          options={conversationFilters.map((f) => ({ id: f.key, label: f.label }))}
+          value={filter.key}
+          onChange={(key) => update({ estado: key, c: null })}
+        />
       </div>
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[24rem_1fr]">

@@ -5,7 +5,7 @@ import { useDocumentTitle } from '../../../hooks/useDocumentTitle'
 import { formatDateTime, formatMoney, orderStatusLabels, orderTone, plural, quoteStatusLabels, quoteTone, whatsappLink } from '../panel-logic'
 import { customerSummary, customerTypeLabels } from '../people-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
-import { BackLink, Badge, Card, EmptyState, Field, inputClass, Notice, PageHeader, primaryButton, QueryView, secondaryButton } from '../ui'
+import { BackLink, Badge, Card, EmptyState, Field, inputClass, listRow, listSurface, Notice, PageHeader, primaryButton, QueryView, secondaryButton } from '../ui'
 
 const monthYear = new Intl.DateTimeFormat('es-PE', { month: 'long', year: 'numeric', timeZone: 'America/Lima' })
 
@@ -14,12 +14,12 @@ function CustomerCard({ customer }: { customer: CustomerListItem }) {
     <li>
       <Link
         to={`/clientes/${customer.id}`}
-        className="grid gap-2 rounded-2xl border border-linea bg-white p-5 transition-shadow hover:border-madera/60 hover:shadow-md focus-visible:shadow-md sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6 sm:px-6"
+        className={`${listRow} grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6 sm:px-7`}
       >
         <span className="grid min-w-0 gap-0.5">
           <span className="truncate text-xl font-bold text-carbon">{customer.companyName ?? customer.fullName}</span>
           {customer.companyName && <span className="text-base text-carbon-600">Contacto: {customer.fullName}</span>}
-          <span className="truncate text-base text-carbon-600">{[customer.phone, customer.email].filter(Boolean).join(' · ') || 'Sin datos de contacto'}</span>
+          <span className="truncate text-base text-carbon-600">{[customer.phone, customer.email].filter(Boolean).join(', ') || 'Sin datos de contacto'}</span>
         </span>
         <span className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Badge tone={customer.customerType === 'business' ? 'info' : 'neutral'}>{customerTypeLabels[customer.customerType]}</Badge>
@@ -80,7 +80,7 @@ export function CustomersPage() {
             {items.length === 0 ? (
               <EmptyState>No se encontraron clientes.</EmptyState>
             ) : (
-              <ul className="grid gap-3">
+              <ul className={listSurface}>
                 {items.map((c) => (
                   <CustomerCard key={c.id} customer={c} />
                 ))}
@@ -147,7 +147,7 @@ function CustomerView({ c, reload }: { c: CustomerDetail; reload: () => void }) 
         <div className="grid gap-1">
           <h1 className="text-4xl">{c.companyName ?? c.fullName}</h1>
           <p className="text-lg text-carbon-600">
-            {customerTypeLabels[c.customerType]} · cliente desde {monthYear.format(new Date(c.createdAt))}
+            {customerTypeLabels[c.customerType]}, cliente desde {monthYear.format(new Date(c.createdAt))}
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

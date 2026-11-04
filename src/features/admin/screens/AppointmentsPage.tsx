@@ -5,7 +5,7 @@ import { useDocumentTitle } from '../../../hooks/useDocumentTitle'
 import { plural, whatsappLink } from '../panel-logic'
 import { appointmentHour, groupAppointmentsByDay, isOverdue } from '../people-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
-import { Badge, EmptyState, Notice, PageHeader, primaryButton, QueryView, secondaryButton } from '../ui'
+import { Badge, EmptyState, Notice, PageHeader, primaryButton, QueryView, secondaryButton, Segmented } from '../ui'
 
 const filters: { key: AppointmentStatus; label: string; hint: string }[] = [
   { key: 'pending', label: 'Por atender', hint: 'Clientes que pidieron que los llames. Elegieron el día y la hora en el chat.' },
@@ -98,23 +98,13 @@ export function AppointmentsPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title="Citas" />
-      <div role="group" aria-label="Ver citas" className="mt-6 flex flex-wrap gap-2">
-        {filters.map((f) => {
-          const on = f.key === filter.key
-          return (
-            <button
-              key={f.key}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setParams({ estado: f.key }, { replace: true })}
-              className={`min-h-12 rounded-full border-2 px-5 text-base font-bold transition-colors ${
-                on ? 'border-nogal bg-nogal text-marfil' : 'border-linea bg-white text-nogal hover:border-nogal'
-              }`}
-            >
-              {f.label}
-            </button>
-          )
-        })}
+      <div className="mt-6">
+        <Segmented
+          label="Ver citas"
+          options={filters.map((f) => ({ id: f.key, label: f.label }))}
+          value={filter.key}
+          onChange={(key) => setParams({ estado: key }, { replace: true })}
+        />
       </div>
       <div className="mt-6">
         <QueryView state={state} onRetry={reload}>

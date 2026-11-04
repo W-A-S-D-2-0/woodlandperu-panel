@@ -137,7 +137,7 @@ function Report({ report }: { report: ReportPayload }) {
         <p className="font-display text-4xl break-words text-marfil sm:text-6xl">{formatMoney(sales.total)}</p>
         <p className="text-xl">
           en {plural(sales.count, 'pedido confirmado', 'pedidos confirmados')}
-          {sales.averageTicket !== null && <> · cada venta fue de {formatMoney(sales.averageTicket)} en promedio</>}.
+          {sales.averageTicket !== null && <>. Cada venta fue de {formatMoney(sales.averageTicket)} en promedio</>}.
         </p>
       </section>
 

@@ -28,6 +28,8 @@ import {
   EmptyState,
   Field,
   inputClass,
+  listRow,
+  listSurface,
   NextStep,
   Notice,
   PageHeader,
@@ -35,31 +37,40 @@ import {
   QueryView,
   secondaryButton,
   secondaryButtonLarge,
+  Segmented,
   StepLine,
 } from '../ui'
 
 const customerName = (order: Pick<OrderListItem, 'customer'>) => order.customer?.companyName ?? order.customer?.fullName ?? null
 
-function OrderCard({ order, showPayment }: { order: OrderListItem; showPayment: boolean }) {
+/** Columnas de la lista en pantallas anchas: cliente, estado, pago y total. */
+const orderColumns = 'sm:grid-cols-[minmax(0,1fr)_11rem_9.5rem_8.5rem]'
+
+function OrderRow({ order, showPayment }: { order: OrderListItem; showPayment: boolean }) {
   const pay = orderPaymentBadge(order)
   return (
     <li>
-      <Link
-        to={`/pedidos/${order.id}`}
-        className="grid gap-3 rounded-2xl border border-linea bg-white p-5 transition-shadow hover:border-madera/60 hover:shadow-md focus-visible:shadow-md sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6 sm:px-6"
-      >
-        <span className="grid min-w-0 gap-0.5">
+      <Link to={`/pedidos/${order.id}`} className={`${listRow} grid gap-3 px-5 py-4 sm:items-center sm:gap-5 sm:px-7 ${orderColumns}`}>
+        <span className="grid min-w-0">
           <span className="truncate text-xl font-bold text-carbon">{customerName(order) ?? order.code}</span>
-          <span className="text-base text-carbon-600">
-            {customerName(order) ? `${order.code} · ` : ''}
-            {formatDateTime(order.createdAt)}
+          <span className="flex flex-wrap gap-x-3 text-base text-carbon-600">
+            {customerName(order) && <span>{order.code}</span>}
+            <span>{formatDateTime(order.createdAt)}</span>
           </span>
         </span>
-        <span className="flex flex-wrap gap-2 sm:justify-end">
-          <Badge tone={orderTone(order.status)}>{orderStatusLabels[order.status]}</Badge>
-          {showPayment && <Badge tone={pay.tone}>{pay.label}</Badge>}
+        <span className="flex flex-wrap gap-2 sm:contents">
+          <span>
+            <Badge tone={orderTone(order.status)}>{orderStatusLabels[order.status]}</Badge>
+          </span>
+          {showPayment ? (
+            <span>
+              <Badge tone={pay.tone}>{pay.label}</Badge>
+            </span>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
         </span>
-        <span className="text-xl font-bold text-carbon sm:min-w-32 sm:text-right">{formatMoney(order.total)}</span>
+        <span className="text-xl font-extrabold text-carbon sm:text-right">{formatMoney(order.total)}</span>
       </Link>
     </li>
   )
@@ -78,41 +89,32 @@ function OrderList({ items, filter, isAdmin }: { items: OrderListItem[]; filter:
 
   return (
     <div className="grid gap-5">
-      <div role="group" aria-label="Ver pedidos" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        {filters.map((f) => {
-          const on = f.id === active?.id
-          const count = items.filter((o) => matchesOrderFilter(o, f.id)).length
-          return (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setParams(f.id === 'todos' ? {} : { ver: f.id })}
-              className={`inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border-2 px-5 text-base font-bold transition-colors ${
-                on ? 'border-nogal bg-nogal text-marfil' : 'border-linea bg-white text-nogal hover:border-nogal'
-              }`}
-            >
-              {f.label}
-              <span className={`min-w-7 rounded-full px-2 text-sm ${on ? 'bg-marfil text-nogal' : 'bg-beige text-nogal'}`}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <p className="text-lg text-carbon-600">{active?.hint}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Segmented
+          label="Ver pedidos"
+          options={filters.map((f) => ({ id: f.id, label: f.label, count: items.filter((o) => matchesOrderFilter(o, f.id)).length }))}
+          value={active?.id ?? 'todos'}
+          onChange={(id) => setParams(id === 'todos' ? {} : { ver: id })}
+        />
         <label className="w-full sm:w-80">
           <span className="sr-only">Buscar pedido</span>
-          <input type="search" className={inputClass} placeholder="Buscar por cliente o código" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input type="search" className={inputClass} placeholder="Cliente o código" value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
       </div>
+      <p className="text-lg text-carbon-600">{active?.hint}</p>
 
       {visible.length === 0 ? (
         <EmptyState>{term ? 'Ningún pedido coincide con la búsqueda.' : 'No hay pedidos aquí. ¡Todo al día!'}</EmptyState>
       ) : (
-        <ul className="grid gap-3">
+        <ul className={listSurface}>
+          <li aria-hidden="true" className={`hidden gap-5 bg-marfil px-7 py-3 text-sm font-bold text-carbon-600 sm:grid ${orderColumns}`}>
+            <span>Cliente</span>
+            <span>Estado</span>
+            <span>{isAdmin ? 'Pago' : ''}</span>
+            <span className="text-right">Total</span>
+          </li>
           {visible.map((o) => (
-            <OrderCard key={o.id} order={o} showPayment={isAdmin} />
+            <OrderRow key={o.id} order={o} showPayment={isAdmin} />
           ))}
         </ul>
       )}
@@ -219,17 +221,17 @@ function OrderPayment({ order }: { order: OrderDetail }) {
         Pago
       </h2>
       <p className={`text-xl font-bold ${paid ? 'text-exito' : pay.tone === 'alert' ? 'text-alerta' : pay.tone === 'warn' ? 'text-aviso' : 'text-carbon-600'}`}>
-        {paid ? `Pagado · ${formatMoney(order.total)}` : pay.tone === 'muted' ? pay.label : 'Falta confirmar el pago'}
+        {paid ? `Pagado: ${formatMoney(order.total)}` : pay.tone === 'muted' ? pay.label : 'Falta confirmar el pago'}
       </p>
       {!paid && pay.tone !== 'muted' && (
         <p className="text-lg text-carbon-600">El cliente debe pagar {formatMoney(order.total)} por Yape. Revisa tu app antes de enviar el pedido.</p>
       )}
       {order.payments.map((p) => (
         <p key={p.id} className="text-base text-carbon">
-          Yape de {formatMoney(p.amount)} · {formatDateTime(p.createdAt)}
+          Yape de {formatMoney(p.amount)}, {formatDateTime(p.createdAt)}
           {p.proofUrl && (
             <>
-              {' · '}
+              {' '}
               <a href={p.proofUrl} target="_blank" rel="noreferrer" className="font-bold text-madera-700 underline">
                 Ver captura
               </a>
@@ -280,8 +282,8 @@ function OrderItems({ order }: { order: OrderDetail }) {
               <p className="text-lg font-bold">{formatMoney(item.lineTotal)}</p>
             </div>
             <p className="text-base text-carbon-600">
-              {formatMoney(item.unitPrice)} cada una{item.fulfillmentType === 'made_to_order' ? ' · se fabrica a pedido' : ''}
-              {item.customDimensions ? ` · Medidas: ${item.customDimensions}` : ''}
+              {formatMoney(item.unitPrice)} cada una{item.fulfillmentType === 'made_to_order' ? ', se fabrica a pedido' : ''}
+              {item.customDimensions ? `. Medidas: ${item.customDimensions}` : ''}
             </p>
             {item.customization && (
               <p className="mt-1 justify-self-start rounded-xl bg-aviso-claro px-3 py-1.5 text-base font-semibold text-aviso">Grabado: {item.customization}</p>
@@ -411,8 +413,8 @@ export function OrderDetailPage() {
               <div className="grid gap-1">
                 <h1 className="text-4xl">{customerName(order) ?? order.code}</h1>
                 <p className="text-lg text-carbon-600">
-                  {customerName(order) ? `Pedido ${order.code} · ` : ''}
-                  {channelLabels[order.channel] ?? order.channel} · {formatDateTime(order.createdAt)}
+                  {customerName(order) ? `Pedido ${order.code}, ` : ''}
+                  {(channelLabels[order.channel] ?? order.channel).toLowerCase()}, {formatDateTime(order.createdAt)}
                 </p>
               </div>
               <p className="font-display text-4xl text-nogal">{formatMoney(order.total)}</p>
@@ -438,7 +440,7 @@ export function OrderDetailPage() {
                 )}
                 {order.quoteId && isAdmin && (
                   <Link to={`/cotizaciones/${order.quoteId}`} className="text-lg font-bold text-madera-700 hover:underline">
-                    Ver la cotización de este pedido →
+                    Ver la cotización de este pedido
                   </Link>
                 )}
               </div>

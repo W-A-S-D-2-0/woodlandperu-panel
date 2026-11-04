@@ -169,6 +169,8 @@
   /* Panel interno: todo un 12.5 % más grande (base 18 px) para leerse sin esfuerzo. La web pública no cambia. */
   html.panel {
     font-size: 112.5%;
+    /* Montos y cantidades con números del mismo ancho: se alinean en columnas. */
+    font-variant-numeric: tabular-nums;
   }
 
   /* Tamaño elegido en «Mi perfil» (profile-logic.ts). */

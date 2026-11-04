@@ -24,13 +24,18 @@ export const secondaryButtonLarge =
 export const dangerButton =
   'inline-flex min-h-12 items-center justify-center rounded-full border-2 border-alerta px-6 text-base font-bold text-alerta transition-colors hover:bg-alerta hover:text-marfil disabled:cursor-not-allowed disabled:opacity-50'
 
+/** Lista en una sola superficie: filas separadas por líneas, en vez de una tarjeta suelta por elemento. */
+export const listSurface = 'divide-y divide-beige overflow-hidden rounded-3xl border border-linea bg-white shadow-lg shadow-nogal/5'
+
+/** Fila que se toca completa dentro de `listSurface`. */
+export const listRow = 'block transition-colors hover:bg-marfil focus-visible:bg-marfil'
+
 export function PageHeader({ title, intro, actions }: { title: string; intro?: string; actions?: ReactNode }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-3xl sm:text-4xl">{title}</h1>
-        <span aria-hidden="true" className="mt-3 block h-0.5 w-10 rounded-full bg-madera" />
-        {intro && <p className="mt-3 max-w-2xl text-lg text-carbon-600">{intro}</p>}
+        <h1 className="text-4xl leading-tight sm:text-5xl">{title}</h1>
+        {intro && <p className="mt-2 max-w-2xl text-lg text-carbon-600">{intro}</p>}
       </div>
       {actions}
     </header>
@@ -39,9 +44,75 @@ export function PageHeader({ title, intro, actions }: { title: string; intro?: s
 
 export function BackLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="inline-flex min-h-12 items-center text-base font-bold text-madera-700 hover:underline">
-      ← {children}
+    <Link to={to} className="inline-flex min-h-12 items-center gap-1.5 text-base font-bold text-madera-700 hover:underline">
+      <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 6-6 6 6 6" />
+      </svg>
+      {children}
     </Link>
+  )
+}
+
+/**
+ * Anillos de crecimiento de la teca (el motivo del logo). Decorativos: se dibujan en cobre sobre el nogal.
+ * `strength` va de 0 a 1 y controla cuánto se notan.
+ */
+export function GrowthRings({ className = '', strength = 1 }: { className?: string; strength?: number }) {
+  const rings = [
+    [22, 17],
+    [44, 35],
+    [68, 54],
+    [92, 73],
+    [118, 94],
+    [146, 116],
+    [176, 139],
+    [208, 164],
+    [242, 190],
+  ] as const
+  return (
+    <svg aria-hidden="true" viewBox="0 0 520 380" className={`pointer-events-none ${className}`} fill="none" stroke="currentColor" strokeWidth="1.6">
+      {rings.map(([rx, ry], i) => (
+        <ellipse key={rx} cx={260 + (i % 2 === 0 ? -2 : 2)} cy={190 + (i % 3) - 1} rx={rx} ry={ry} opacity={(0.55 - i * 0.05) * strength} />
+      ))}
+    </svg>
+  )
+}
+
+/** Control segmentado: varias opciones en una sola barra; la elegida se marca en blanco. Con cantidades si se dan. */
+export function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: readonly { id: T; label: string; count?: number }[]
+  value: T
+  onChange: (id: T) => void
+}) {
+  return (
+    // En el celular ocupa el ancho de la pantalla y se desliza de lado; no empuja la página.
+    <div role="group" aria-label={label} className="-mx-4 w-screen min-w-0 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:max-w-full sm:px-0">
+      <div className="inline-flex gap-1 rounded-2xl bg-beige p-1.5">
+        {options.map((o) => {
+          const on = o.id === value
+          return (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(o.id)}
+              className={`inline-flex min-h-12 shrink-0 items-center gap-2 rounded-xl px-4 text-base font-bold whitespace-nowrap transition-colors ${
+                on ? 'bg-white text-nogal shadow-sm shadow-nogal/15' : 'text-carbon-600 hover:text-nogal'
+              }`}
+            >
+              {o.label}
+              {o.count !== undefined && <span className={`text-sm font-extrabold ${on ? 'text-madera-700' : 'text-carbon-600'}`}>{o.count}</span>}
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -54,24 +125,19 @@ export function Card({ title, children, className = '', id }: { title?: string; 
   )
 }
 
-/** Colores de estado: verde = listo o pagado, ámbar = falta algo, rojo = problema, nogal = en marcha, gris = cerrado. */
-const tones: Record<StatusTone, { chip: string; dot: string }> = {
-  neutral: { chip: 'bg-beige text-carbon', dot: 'bg-carbon-600' },
-  good: { chip: 'bg-exito-claro text-exito', dot: 'bg-exito' },
-  warn: { chip: 'bg-aviso-claro text-aviso', dot: 'bg-madera' },
-  alert: { chip: 'bg-alerta-claro text-alerta', dot: 'bg-alerta' },
-  info: { chip: 'bg-nogal text-marfil', dot: 'bg-ambar' },
-  muted: { chip: 'bg-carbon/5 text-carbon-600', dot: 'bg-carbon-600/50' },
+/** Colores de estado: verde = listo o pagado, ámbar = falta algo, rojo = problema, nogal = en marcha, borde = neutro, gris = cerrado. */
+const tones: Record<StatusTone, string> = {
+  neutral: 'border-2 border-linea text-nogal',
+  good: 'bg-exito-claro text-exito',
+  warn: 'bg-aviso-claro text-aviso',
+  alert: 'bg-alerta-claro text-alerta',
+  info: 'bg-nogal text-marfil',
+  muted: 'bg-carbon/5 text-carbon-600',
 }
 
-/** Etiqueta de estado con un punto de color: se entiende de un vistazo, sin depender solo del color. */
+/** Etiqueta de estado: la palabra dice el estado; el color ayuda a encontrarlo de un vistazo. */
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: StatusTone }) {
-  return (
-    <span className={`inline-flex min-h-8 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm font-bold ${tones[tone].chip}`}>
-      <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tones[tone].dot}`} />
-      {children}
-    </span>
-  )
+  return <span className={`inline-flex min-h-8 items-center whitespace-nowrap rounded-lg px-3 text-sm font-bold ${tones[tone]}`}>{children}</span>
 }
 
 export function Notice({ children, kind = 'error' }: { children: ReactNode; kind?: 'error' | 'info' }) {
@@ -174,7 +240,7 @@ export function Stat({
       <p className="text-base font-semibold text-carbon-600">{label}</p>
       <p className={`mt-1 font-display text-4xl ${alert ? 'text-aviso' : 'text-nogal'}`}>{value}</p>
       {hint && <p className="mt-1 text-sm text-carbon-600">{hint}</p>}
-      {to && <p className="mt-3 text-base font-bold text-madera-700">Ver →</p>}
+      {to && <p className="mt-3 text-base font-bold text-madera-700 underline underline-offset-4">Ver detalle</p>}
     </>
   )
   const base = `block rounded-2xl border p-6 ${alert ? 'border-madera/60 bg-aviso-claro' : 'border-linea bg-white'}`
@@ -250,22 +316,8 @@ export function NextStep({ label = 'Siguiente paso', title, help, children }: { 
 /** Botones para ver una colección a la vez ("Todas" deja ver todo). El valor vacío es "Todas". */
 export function CollectionSwitch({ collections, value, onChange }: { collections: readonly Collection[]; value: string; onChange: (slug: string) => void }) {
   if (collections.length < 2) return null
-  const options = [{ slug: '', label: 'Todas' }, ...collections.map((c) => ({ slug: c.slug, label: shortCollectionName(c.name) }))]
-  return (
-    <div role="group" aria-label="Colección" className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button
-          key={o.slug}
-          type="button"
-          aria-pressed={o.slug === value}
-          onClick={() => onChange(o.slug)}
-          className={`min-h-12 rounded-full border-2 px-5 text-base font-bold transition-colors ${o.slug === value ? 'border-nogal bg-nogal text-marfil' : 'border-linea bg-white text-nogal hover:border-nogal'}`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
+  const options = [{ id: '', label: 'Todas' }, ...collections.map((c) => ({ id: c.slug, label: shortCollectionName(c.name) }))]
+  return <Segmented label="Colección" options={options} value={value} onChange={onChange} />
 }
 
 /** Foto oficial del modelo (por su slug). Es decorativa: el nombre ya está al lado. Sin foto, deja un recuadro neutro. */

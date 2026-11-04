@@ -33,7 +33,7 @@ function VariantRow({ variant, reload }: { variant: PanelVariant; reload: () => 
         <div className="grid gap-0.5">
           <p className="text-xl font-bold">{variant.name}</p>
           <p className="text-base text-carbon-600">
-            {[formatDimensions(variant.dimensionsLabel), variant.fulfillmentType === 'made_to_order' ? 'Se fabrica a pedido' : null].filter(Boolean).join(' · ')}
+            {[formatDimensions(variant.dimensionsLabel), variant.fulfillmentType === 'made_to_order' ? 'se fabrica a pedido' : null].filter(Boolean).join(', ')}
           </p>
         </div>
         <div className="grid justify-items-end gap-1 text-right">
@@ -48,7 +48,7 @@ function VariantRow({ variant, reload }: { variant: PanelVariant; reload: () => 
 
       {variant.priceTiers.length > 0 && (
         <p className="text-base text-carbon-600">
-          Precio por cantidad: {variant.priceTiers.map((t) => `desde ${t.minQuantity} → ${formatMoney(t.unitPrice)}`).join(' · ')}
+          Precio por cantidad: {variant.priceTiers.map((t) => `desde ${t.minQuantity} unidades, ${formatMoney(t.unitPrice)}`).join('; ')}
         </p>
       )}
 
@@ -138,7 +138,7 @@ function ProductCard({ product, reload }: { product: PanelProduct; reload: () =>
           <h2 className="text-3xl">{product.name}</h2>
           <p className="text-lg text-carbon-600">
             {product.category?.name ?? 'Sin colección'}
-            {product.isCustomizable && ' · Se puede grabar'}
+            {product.isCustomizable && ', se puede grabar'}
           </p>
         </div>
         <span className="col-span-2 sm:col-span-1">

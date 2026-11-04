@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
 import { Wordmark } from '../../components/ui/Wordmark'
 import { PUBLIC_SITE_URL } from '../../lib/public-site'
@@ -7,8 +8,24 @@ import { LowStockAlarm } from './LowStockAlarm'
 import { sectionForPath, sectionsFor, type AdminSection } from './modules'
 import { NavIcon } from './nav-icons'
 import { initials } from './profile-logic'
+import { GrowthRings } from './ui'
 
-/** Pestañas de una sección con varios módulos (Ventas: Pedidos · Cotizaciones). */
+/** El mismo corte que `lg:` de Tailwind: en laptop hay barra lateral; en el celular, barra arriba y menú abajo. */
+const DESKTOP = '(min-width: 64rem)'
+
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia(DESKTOP)
+      query.addEventListener('change', notify)
+      return () => query.removeEventListener('change', notify)
+    },
+    () => window.matchMedia(DESKTOP).matches,
+    () => true,
+  )
+}
+
+/** Pestañas de una sección con varios módulos (Ventas: Pedidos y Cotizaciones). */
 function SectionTabs({ section, pathname }: { section: AdminSection; pathname: string }) {
   const first = pathname.split('/').filter(Boolean)[0]
   return (
@@ -41,14 +58,18 @@ export function AdminLayout() {
   const { pathname } = useLocation()
   const sections = sectionsFor(staff.role)
   const current = sectionForPath(pathname, staff.role)
+  // Una sola alarma (vigila el stock y suena): en laptop vive junto al perfil; en el celular, arriba.
+  const desktop = useIsDesktop()
 
   return (
-    <div className="min-h-dvh bg-marfil lg:grid lg:grid-cols-[17rem_1fr]">
-      <aside className="hidden bg-nogal px-4 py-6 text-beige lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
-        <div className="px-3 pb-8">
+    <div className="min-h-dvh bg-marfil lg:grid lg:grid-cols-[18.5rem_1fr]">
+      <aside className="relative hidden overflow-hidden bg-nogal px-4 py-6 text-beige lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
+        {/* Los anillos de la teca, tenues al pie del menú. */}
+        <GrowthRings className="absolute -bottom-28 -left-36 w-[26rem] text-madera" strength={0.5} />
+        <div className="relative px-3 pb-8">
           <Wordmark to="/" tone="light" suffix="Panel" />
         </div>
-        <nav aria-label="Menú del panel">
+        <nav aria-label="Menú del panel" className="relative">
           <ul className="grid gap-1.5">
             {sections.map((section) => {
               const active = current?.slug === section.slug
@@ -57,7 +78,7 @@ export function AdminLayout() {
                   <Link
                     to={section.to}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex min-h-13 items-center gap-3.5 rounded-xl px-4 text-lg transition-colors ${
+                    className={`flex min-h-13 items-center gap-3.5 rounded-xl px-4 text-lg whitespace-nowrap transition-colors ${
                       active ? 'bg-marfil font-bold text-nogal' : 'font-semibold text-marfil hover:bg-marfil/10'
                     }`}
                   >
@@ -69,51 +90,53 @@ export function AdminLayout() {
             })}
           </ul>
         </nav>
-        <div className="mt-auto grid justify-items-start gap-1 border-t border-beige/20 pt-5">
-          {/* Tocar el nombre lleva a «Mi perfil»: datos, contraseña y tamaño de letra. */}
-          <Link
-            to="/perfil"
-            aria-current={pathname === '/perfil' ? 'page' : undefined}
-            className={`flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors ${pathname === '/perfil' ? 'bg-marfil/15' : 'hover:bg-marfil/10'}`}
-          >
-            <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-xl text-marfil">
-              {initials(staff.fullName)}
-            </span>
-            <span className="grid min-w-0">
-              <span className="truncate text-lg font-bold text-marfil">{staff.fullName}</span>
-              <span className="text-sm text-arena">{roleLabels[staff.role]} · Mi perfil</span>
-            </span>
-          </Link>
-          <SignOutButton
-            onConfirm={signOut}
-            className="mt-3 ml-2.5 inline-flex min-h-12 items-center rounded-full border-2 border-beige/40 px-5 text-base font-bold text-marfil transition-colors hover:border-marfil hover:bg-marfil/10"
-          />
-          <a href={PUBLIC_SITE_URL} className="mt-2 ml-2.5 inline-flex min-h-11 items-center text-sm text-beige/80 hover:text-marfil">
-            Ir a la web pública →
-          </a>
+        <div className="relative mt-auto grid gap-2 border-t border-beige/20 pt-4">
+          <div className="flex items-center gap-1">
+            {/* Tocar el nombre lleva a «Mi perfil»: datos, contraseña y tamaño de letra. */}
+            <Link
+              to="/perfil"
+              aria-current={pathname === '/perfil' ? 'page' : undefined}
+              className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl p-2 transition-colors ${pathname === '/perfil' ? 'bg-marfil/15' : 'hover:bg-marfil/10'}`}
+            >
+              <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-xl text-marfil">
+                {initials(staff.fullName)}
+              </span>
+              <span className="grid min-w-0">
+                <span className="truncate text-lg font-bold text-marfil">{staff.fullName}</span>
+                <span className="text-sm text-arena">{roleLabels[staff.role]}</span>
+              </span>
+            </Link>
+            {desktop && <LowStockAlarm inventoryPath="/inventario" tone="light" />}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 px-2">
+            <SignOutButton onConfirm={signOut} className="inline-flex min-h-11 items-center text-sm font-semibold text-arena underline-offset-4 hover:text-marfil hover:underline" />
+            <a href={PUBLIC_SITE_URL} className="inline-flex min-h-11 items-center text-sm text-arena underline-offset-4 hover:text-marfil hover:underline">
+              Ir a la web pública
+            </a>
+          </div>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-col">
-        <header className="flex min-h-16 items-center gap-3 border-b border-linea px-4 sm:px-8">
-          <div className="min-w-0 lg:hidden">
+        {/* Barra de arriba solo en el celular: en laptop la alarma y el perfil están en el menú lateral. */}
+        <header className="flex min-h-16 items-center gap-3 border-b border-linea px-4 sm:px-8 lg:hidden">
+          <div className="min-w-0">
             {/* Sin el sufijo: en el celular no entra junto a la alarma y el perfil. */}
             <Wordmark to="/" suffix="" />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            {/* Vigila el stock bajo en todo el panel y suena la alarma. */}
-            <LowStockAlarm inventoryPath="/inventario" />
+            {!desktop && <LowStockAlarm inventoryPath="/inventario" />}
             {/* En el celular el perfil (y desde ahí, cerrar sesión) está en el círculo con las iniciales. */}
             <Link
               to="/perfil"
               aria-label={`Mi perfil: ${staff.fullName}`}
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-lg text-marfil ring-2 ring-nogal/10 lg:hidden"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-lg text-marfil"
             >
               {initials(staff.fullName)}
             </Link>
           </div>
         </header>
-        <main className="flex-1 px-4 pt-6 pb-32 sm:px-8 lg:pt-10 lg:pb-14">
+        <main className="flex-1 px-4 pt-6 pb-32 sm:px-8 lg:px-12 lg:pt-12 lg:pb-16">
           {current && current.modules.length > 1 && <SectionTabs section={current} pathname={pathname} />}
           <Outlet />
         </main>

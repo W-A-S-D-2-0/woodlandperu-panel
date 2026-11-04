@@ -141,3 +141,9 @@ export function todayLabel(now: Date): string {
 export function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? ''
 }
+
+/** «4 cosas por hacer», «1 cosa por hacer»; sin pendientes, null (la pantalla dice que todo está al día). */
+export function pendingPhrase(count: number): string | null {
+  if (count <= 0) return null
+  return count === 1 ? '1 cosa por hacer' : `${count} cosas por hacer`
+}

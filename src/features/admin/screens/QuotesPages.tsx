@@ -29,12 +29,15 @@ import {
   EmptyState,
   Field,
   inputClass,
+  listRow,
+  listSurface,
   NextStep,
   Notice,
   PageHeader,
   primaryButtonLarge,
   QueryView,
   secondaryButton,
+  Segmented,
   StepLine,
 } from '../ui'
 
@@ -42,24 +45,33 @@ const missingLabel = (n: number) => (n === 1 ? 'Falta 1 precio' : `Faltan ${n} p
 
 const customerName = (quote: Pick<QuoteListItem, 'customer'>) => quote.customer?.companyName ?? quote.customer?.fullName ?? null
 
-function QuoteCard({ quote }: { quote: QuoteListItem }) {
+/** Columnas de la lista en pantallas anchas: cliente, estado, precios y total. */
+const quoteColumns = 'sm:grid-cols-[minmax(0,1fr)_11rem_10rem_8.5rem]'
+
+function QuoteRow({ quote }: { quote: QuoteListItem }) {
   return (
     <li>
-      <Link
-        to={`/cotizaciones/${quote.id}`}
-        className="grid gap-3 rounded-2xl border border-linea bg-white p-5 transition-shadow hover:border-madera/60 hover:shadow-md focus-visible:shadow-md sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6 sm:px-6"
-      >
-        <span className="grid min-w-0 gap-0.5">
+      <Link to={`/cotizaciones/${quote.id}`} className={`${listRow} grid gap-3 px-5 py-4 sm:items-center sm:gap-5 sm:px-7 ${quoteColumns}`}>
+        <span className="grid min-w-0">
           <span className="truncate text-xl font-bold text-carbon">{customerName(quote) ?? quote.code}</span>
-          <span className="text-base text-carbon-600">
-            {quote.code} · {formatDateTime(quote.createdAt)}
+          <span className="flex flex-wrap gap-x-3 text-base text-carbon-600">
+            <span>{quote.code}</span>
+            <span>{formatDateTime(quote.createdAt)}</span>
           </span>
         </span>
-        <span className="flex flex-wrap gap-2 sm:justify-end">
-          <Badge tone={quoteTone(quote.status)}>{quoteStatusLabels[quote.status]}</Badge>
-          {quote.pendingPrices > 0 && <Badge tone="warn">{missingLabel(quote.pendingPrices)}</Badge>}
+        <span className="flex flex-wrap gap-2 sm:contents">
+          <span>
+            <Badge tone={quoteTone(quote.status)}>{quoteStatusLabels[quote.status]}</Badge>
+          </span>
+          {quote.pendingPrices > 0 ? (
+            <span>
+              <Badge tone="warn">{missingLabel(quote.pendingPrices)}</Badge>
+            </span>
+          ) : (
+            <span className="hidden sm:block" />
+          )}
         </span>
-        <span className="text-xl font-bold text-carbon sm:min-w-32 sm:text-right">
+        <span className="text-xl font-extrabold text-carbon sm:text-right">
           {quote.pendingPrices > 0 ? <span className="text-lg font-semibold text-carbon-600">Por definir</span> : formatMoney(quote.total)}
         </span>
       </Link>
@@ -78,41 +90,32 @@ function QuoteList({ items, filter }: { items: QuoteListItem[]; filter: QuoteFil
 
   return (
     <div className="grid gap-5">
-      <div role="group" aria-label="Ver cotizaciones" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        {quoteFilters.map((f) => {
-          const on = f.id === active?.id
-          const count = items.filter((q) => matchesQuoteFilter(q.status, f.id)).length
-          return (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setParams(f.id === 'todas' ? {} : { ver: f.id })}
-              className={`inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border-2 px-5 text-base font-bold transition-colors ${
-                on ? 'border-nogal bg-nogal text-marfil' : 'border-linea bg-white text-nogal hover:border-nogal'
-              }`}
-            >
-              {f.label}
-              <span className={`min-w-7 rounded-full px-2 text-sm ${on ? 'bg-marfil text-nogal' : 'bg-beige text-nogal'}`}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <p className="max-w-xl text-lg text-carbon-600">{active?.hint}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Segmented
+          label="Ver cotizaciones"
+          options={quoteFilters.map((f) => ({ id: f.id, label: f.label, count: items.filter((q) => matchesQuoteFilter(q.status, f.id)).length }))}
+          value={active?.id ?? 'todas'}
+          onChange={(id) => setParams(id === 'todas' ? {} : { ver: id })}
+        />
         <label className="w-full sm:w-80">
           <span className="sr-only">Buscar cotización</span>
-          <input type="search" className={inputClass} placeholder="Buscar por cliente o código" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input type="search" className={inputClass} placeholder="Cliente o código" value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
       </div>
+      <p className="max-w-2xl text-lg text-carbon-600">{active?.hint}</p>
 
       {visible.length === 0 ? (
         <EmptyState>{term ? 'Ninguna cotización coincide con la búsqueda.' : 'No hay cotizaciones aquí. ¡Todo al día!'}</EmptyState>
       ) : (
-        <ul className="grid gap-3">
+        <ul className={listSurface}>
+          <li aria-hidden="true" className={`hidden gap-5 bg-marfil px-7 py-3 text-sm font-bold text-carbon-600 sm:grid ${quoteColumns}`}>
+            <span>Cliente</span>
+            <span>Estado</span>
+            <span>Precios</span>
+            <span className="text-right">Total</span>
+          </li>
           {visible.map((q) => (
-            <QuoteCard key={q.id} quote={q} />
+            <QuoteRow key={q.id} quote={q} />
           ))}
         </ul>
       )}
@@ -391,7 +394,7 @@ function QuoteView({ quote, reload }: { quote: QuoteDetail; reload: () => void }
         <div className="grid gap-1">
           <h1 className="text-4xl">{customerName(quote) ?? quote.code}</h1>
           <p className="text-lg text-carbon-600">
-            Cotización {quote.code} · {channelLabels[quote.channel] ?? quote.channel} · {formatDateTime(quote.createdAt)}
+            Cotización {quote.code}, {(channelLabels[quote.channel] ?? quote.channel).toLowerCase()}, {formatDateTime(quote.createdAt)}
           </p>
         </div>
         <div className="grid justify-items-start gap-1 sm:justify-items-end">

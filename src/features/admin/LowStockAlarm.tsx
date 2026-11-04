@@ -110,7 +110,7 @@ function BellIcon() {
  * llega a su mínimo, muestra el aviso arriba y suena la alarma diciendo cuál producto es. Cada variante suena una sola
  * vez mientras siga baja (se recuerda aunque se recargue la página); «Repetir alarma» la vuelve a sonar.
  */
-export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
+export function LowStockAlarm({ inventoryPath, tone = 'dark' }: { inventoryPath: string; /** light = sobre el nogal de la barra lateral. */ tone?: 'dark' | 'light' }) {
   const { state, reload } = useAdminQuery<ListResponse<InventoryLevel>>('/inventory')
   const [soundOn, setSoundOn] = useState(() => readSoundEnabled(storage()))
   // El navegador bloquea el sonido hasta que la persona toca la página: se avisa para activarlo.
@@ -193,15 +193,17 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
         aria-pressed={soundOn}
         aria-label={soundOn ? 'Alarma de stock con sonido. Toca para silenciarla.' : 'Alarma de stock en silencio. Toca para activar el sonido.'}
         title={soundOn ? 'Alarma con sonido' : 'Alarma en silencio'}
-        className={`inline-flex size-12 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-beige ${
-          soundOn ? 'text-nogal' : 'text-carbon-600/70 hover:text-carbon-600'
+        className={`inline-flex size-12 shrink-0 items-center justify-center rounded-full transition-colors ${
+          tone === 'light'
+            ? `hover:bg-marfil/10 ${soundOn ? 'text-marfil' : 'text-arena/70 hover:text-arena'}`
+            : `hover:bg-beige ${soundOn ? 'text-nogal' : 'text-carbon-600/70 hover:text-carbon-600'}`
         }`}
       >
         {soundOn ? <VolumeOnIcon /> : <VolumeOffIcon />}
       </button>
 
       {low.length > 0 && dismissed !== lowIds && (
-        <div role="alert" className="fixed top-3 right-3 left-3 z-50 mx-auto flex max-w-3xl flex-wrap items-center gap-3 rounded-xl border border-alerta/50 bg-marfil px-5 py-4 text-base text-carbon shadow-xl lg:left-[18rem]">
+        <div role="alert" className="fixed top-3 right-3 left-3 z-50 mx-auto flex max-w-3xl flex-wrap items-center gap-3 rounded-xl border border-alerta/50 bg-marfil px-5 py-4 text-base text-carbon shadow-xl lg:left-[19.5rem]">
           <span className="text-alerta">
             <BellIcon />
           </span>
@@ -211,8 +213,8 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
               {low
                 .slice(0, 4)
                 .map((l) => `${levelName(l)} (${l.available} / mín. ${l.minStock ?? '—'})`)
-                .join(' · ')}
-              {low.length > 4 && ` · y ${low.length - 4} más`}
+                .join(', ')}
+              {low.length > 4 && `, y ${low.length - 4} más`}
             </p>
             {blocked && soundOn && <p className="mt-1 text-sm text-alerta">El navegador bloqueó el sonido. Toca «Activar sonido» para que suene la alarma.</p>}
           </div>
