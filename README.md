@@ -13,6 +13,8 @@ Ahora es su propio repositorio; la **API** (Cloudflare Worker), la **base de dat
 - Toda la información viene de la API: `vercel.json` reenvía `/api/*` al Worker
   (`https://woodland-peru-api.woodland-peru.workers.dev`). El panel no decide permisos: el Worker y la RLS de Supabase lo hacen.
 - Inicio de sesión con Supabase Auth; `GET /api/admin/me` confirma que la persona es del equipo.
+- **No se crean cuentas desde el panel.** Solo entran los correos invitados (`staff_invites`); la cuenta la crea
+  administración en Supabase. Pasos en el README de woodlandsperu-main («Cuentas del equipo»).
 - `shared/` es una copia de los contratos de la API de woodlandsperu-main: **si cambian allá, hay que copiarlos aquí**.
 
 ## Desarrollo

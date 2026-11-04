@@ -51,26 +51,6 @@ export function AuthRoot() {
     [client],
   )
 
-  const signUp = useCallback<AuthContextValue['signUp']>(
-    async ({ firstName, lastName, email, password }) => {
-      if (!client) return { error: 'La autenticación no está configurada.' }
-      const { data, error } = await client.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: `${firstName} ${lastName}`.trim(), first_name: firstName, last_name: lastName }, emailRedirectTo: loginUrl() },
-      })
-      if (error) {
-        if (error.code === 'signup_disabled') return { error: 'El registro de cuentas no está habilitado todavía. Pide a administración que lo active.' }
-        if (error.code === 'weak_password') return { error: 'La contraseña es muy débil. Usa al menos 8 caracteres.' }
-        if (error.status === 429) return { error: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.' }
-        return { error: 'No se pudo crear la cuenta. Intenta nuevamente.' }
-      }
-      // Sin sesión: Supabase pide confirmar el correo primero.
-      return { error: null, needsConfirmation: !data.session, accessToken: data.session?.access_token ?? null }
-    },
-    [client],
-  )
-
   const requestPasswordReset = useCallback(
     async (email: string) => {
       if (!client) return 'La autenticación no está configurada.'
@@ -102,8 +82,8 @@ export function AuthRoot() {
   }, [client])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status: state.status, session: state.session, recovering: state.recovering, signIn, signUp, requestPasswordReset, updatePassword, signOut }),
-    [state, signIn, signUp, requestPasswordReset, updatePassword, signOut],
+    () => ({ status: state.status, session: state.session, recovering: state.recovering, signIn, requestPasswordReset, updatePassword, signOut }),
+    [state, signIn, requestPasswordReset, updatePassword, signOut],
   )
 
   return (
