@@ -33,6 +33,8 @@ export interface StaffSession {
   staff: StaffIdentity
   accessToken: string
   signOut: () => Promise<void>
+  /** Reemplaza los datos del personal tras un cambio confirmado por la API (p. ej., su nombre). */
+  updateStaff: (staff: StaffIdentity) => void
 }
 
 export const StaffContext = createContext<StaffSession | null>(null)

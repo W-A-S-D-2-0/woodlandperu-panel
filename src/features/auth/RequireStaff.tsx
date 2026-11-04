@@ -49,7 +49,15 @@ export function RequireStaff() {
 
   const verified = check?.kind === 'ok' && check.token === token ? check : null
   const staffSession = useMemo<StaffSession | null>(
-    () => (verified ? { staff: verified.staff, accessToken: verified.token, signOut } : null),
+    () =>
+      verified
+        ? {
+            staff: verified.staff,
+            accessToken: verified.token,
+            signOut,
+            updateStaff: (staff) => setCheck({ kind: 'ok', token: verified.token, staff }),
+          }
+        : null,
     [verified, signOut],
   )
 

@@ -45,6 +45,26 @@ function siren(ctx: AudioContext): Promise<void> {
   })
 }
 
+/** Tono corto y suave de dos notas que sube: confirma que la alarma quedó con sonido. */
+function chime(ctx: AudioContext): void {
+  const start = ctx.currentTime + 0.02
+  const notes = [784, 1047] // sol y do agudos
+  notes.forEach((frequency, i) => {
+    const at = start + i * 0.14
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.0001, at)
+    gain.gain.exponentialRampToValueAtTime(0.25, at + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22)
+    gain.connect(ctx.destination)
+    const osc = ctx.createOscillator()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(frequency, at)
+    osc.connect(gain)
+    osc.start(at)
+    osc.stop(at + 0.24)
+  })
+}
+
 function speak(text: string) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return
   window.speechSynthesis.cancel()
@@ -52,6 +72,28 @@ function speak(text: string) {
   voice.lang = 'es-PE'
   voice.rate = 0.95
   window.speechSynthesis.speak(voice)
+}
+
+/** Parlante con ondas: la alarma suena. */
+function VolumeOnIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H3v6h3l5 4z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </svg>
+  )
+}
+
+/** Parlante con una equis: la alarma está en silencio. */
+function VolumeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H3v6h3l5 4z" />
+      <path d="m16 9 6 6" />
+      <path d="m22 9-6 6" />
+    </svg>
+  )
 }
 
 function BellIcon() {
@@ -86,13 +128,20 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
   const low = state.status === 'ok' ? lowStockItems(state.data.items) : []
   const lowIds = low.map((l) => l.variantId).join(',')
 
+  /** Contexto de audio listo para sonar, o null si el navegador no lo permite. */
+  const audio = useCallback(async (): Promise<AudioContext | null> => {
+    const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Audio) return null
+    const ctx = (ctxRef.current ??= new Audio())
+    await ctx.resume()
+    return ctx
+  }, [])
+
   const ring = useCallback(async (items: InventoryLevel[]) => {
     if (items.length === 0) return
     try {
-      const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (!Audio) return
-      const ctx = (ctxRef.current ??= new Audio())
-      await ctx.resume()
+      const ctx = await audio()
+      if (!ctx) return
       if (ctx.state !== 'running') {
         setBlocked(true)
         return
@@ -103,7 +152,7 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
     } catch {
       setBlocked(true)
     }
-  }, [])
+  }, [audio])
 
   // Cada vez que cambia el inventario: lo que bajó por primera vez suena y se recuerda.
   useEffect(() => {
@@ -121,7 +170,19 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
     setSoundOn(next)
     soundRef.current = next
     writeSoundEnabled(storage(), next)
-    if (!next) window.speechSynthesis?.cancel()
+    if (!next) {
+      window.speechSynthesis?.cancel()
+      return
+    }
+    // Al activarla suena un tono corto: así se sabe que quedó con sonido (y el toque desbloquea el audio).
+    void audio()
+      .then((ctx) => {
+        if (ctx?.state === 'running') {
+          setBlocked(false)
+          chime(ctx)
+        }
+      })
+      .catch(() => setBlocked(true))
   }
 
   return (
@@ -130,11 +191,13 @@ export function LowStockAlarm({ inventoryPath }: { inventoryPath: string }) {
         type="button"
         onClick={toggleSound}
         aria-pressed={soundOn}
-        aria-label={`Alarma de stock ${soundOn ? 'con sonido' : 'en silencio'}`}
-        className="inline-flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-full border-2 border-nogal/30 px-3 text-base font-semibold text-nogal transition-colors hover:border-nogal hover:bg-nogal/5 sm:px-4"
+        aria-label={soundOn ? 'Alarma de stock con sonido. Toca para silenciarla.' : 'Alarma de stock en silencio. Toca para activar el sonido.'}
+        title={soundOn ? 'Alarma con sonido' : 'Alarma en silencio'}
+        className={`inline-flex size-12 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-beige ${
+          soundOn ? 'text-nogal' : 'text-carbon-600/70 hover:text-carbon-600'
+        }`}
       >
-        <BellIcon />
-        <span aria-hidden="true" className="hidden sm:inline">Alarma {soundOn ? 'con sonido' : 'en silencio'}</span>
+        {soundOn ? <VolumeOnIcon /> : <VolumeOffIcon />}
       </button>
 
       {low.length > 0 && dismissed !== lowIds && (

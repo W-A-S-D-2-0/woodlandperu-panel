@@ -171,6 +171,15 @@
     font-size: 112.5%;
   }
 
+  /* Tamaño elegido en «Mi perfil» (profile-logic.ts). */
+  html.panel[data-texto='grande'] {
+    font-size: 125%;
+  }
+
+  html.panel[data-texto='muy-grande'] {
+    font-size: 137.5%;
+  }
+
   body {
     @apply bg-marfil font-sans text-carbon antialiased;
   }

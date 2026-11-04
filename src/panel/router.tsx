@@ -47,6 +47,7 @@ export const panelRouter = createBrowserRouter(
                     { path: 'reportes', lazy: async () => ({ Component: (await import('../features/admin/screens/ReportsPage')).ReportsPage }) },
                   ],
                 },
+                { path: 'perfil', lazy: async () => ({ Component: (await import('../features/admin/screens/ProfilePage')).ProfilePage }) },
                 { path: 'produccion', lazy: async () => ({ Component: (await import('../features/admin/screens/ProductionPage')).ProductionPage }) },
                 { path: 'inventario', lazy: async () => ({ Component: (await import('../features/admin/screens/InventoryPage')).InventoryPage }) },
                 { path: 'pedidos', lazy: async () => ({ Component: (await import('../features/admin/screens/OrdersPages')).OrdersPage }) },

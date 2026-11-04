@@ -6,6 +6,7 @@ import { SignOutButton } from '../auth/SignOutButton'
 import { LowStockAlarm } from './LowStockAlarm'
 import { sectionForPath, sectionsFor, type AdminSection } from './modules'
 import { NavIcon } from './nav-icons'
+import { initials } from './profile-logic'
 
 /** Pestañas de una sección con varios módulos (Ventas: Pedidos · Cotizaciones). */
 function SectionTabs({ section, pathname }: { section: AdminSection; pathname: string }) {
@@ -68,14 +69,26 @@ export function AdminLayout() {
             })}
           </ul>
         </nav>
-        <div className="mt-auto grid justify-items-start gap-1 border-t border-beige/20 px-3 pt-5">
-          <p className="text-lg font-bold text-marfil">{staff.fullName}</p>
-          <p className="text-sm text-arena">{roleLabels[staff.role]}</p>
+        <div className="mt-auto grid justify-items-start gap-1 border-t border-beige/20 pt-5">
+          {/* Tocar el nombre lleva a «Mi perfil»: datos, contraseña y tamaño de letra. */}
+          <Link
+            to="/perfil"
+            aria-current={pathname === '/perfil' ? 'page' : undefined}
+            className={`flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors ${pathname === '/perfil' ? 'bg-marfil/15' : 'hover:bg-marfil/10'}`}
+          >
+            <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-xl text-marfil">
+              {initials(staff.fullName)}
+            </span>
+            <span className="grid min-w-0">
+              <span className="truncate text-lg font-bold text-marfil">{staff.fullName}</span>
+              <span className="text-sm text-arena">{roleLabels[staff.role]} · Mi perfil</span>
+            </span>
+          </Link>
           <SignOutButton
             onConfirm={signOut}
-            className="mt-3 inline-flex min-h-12 items-center rounded-full border-2 border-beige/40 px-5 text-base font-bold text-marfil transition-colors hover:border-marfil hover:bg-marfil/10"
+            className="mt-3 ml-2.5 inline-flex min-h-12 items-center rounded-full border-2 border-beige/40 px-5 text-base font-bold text-marfil transition-colors hover:border-marfil hover:bg-marfil/10"
           />
-          <a href={PUBLIC_SITE_URL} className="mt-2 inline-flex min-h-11 items-center text-sm text-beige/80 hover:text-marfil">
+          <a href={PUBLIC_SITE_URL} className="mt-2 ml-2.5 inline-flex min-h-11 items-center text-sm text-beige/80 hover:text-marfil">
             Ir a la web pública →
           </a>
         </div>
@@ -84,17 +97,20 @@ export function AdminLayout() {
       <div className="flex min-w-0 flex-col">
         <header className="flex min-h-16 items-center gap-3 border-b border-linea px-4 sm:px-8">
           <div className="min-w-0 lg:hidden">
-            {/* Sin el sufijo: en el celular no entra junto a la alarma y «Salir». */}
+            {/* Sin el sufijo: en el celular no entra junto a la alarma y el perfil. */}
             <Wordmark to="/" suffix="" />
           </div>
           <div className="ml-auto flex items-center gap-2">
             {/* Vigila el stock bajo en todo el panel y suena la alarma. */}
             <LowStockAlarm inventoryPath="/inventario" />
-            <SignOutButton
-              onConfirm={signOut}
-              label="Salir"
-              className="inline-flex min-h-12 shrink-0 items-center rounded-full border-2 border-nogal/30 px-4 text-base font-bold text-nogal transition-colors hover:border-nogal lg:hidden"
-            />
+            {/* En el celular el perfil (y desde ahí, cerrar sesión) está en el círculo con las iniciales. */}
+            <Link
+              to="/perfil"
+              aria-label={`Mi perfil: ${staff.fullName}`}
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-madera font-display text-lg text-marfil ring-2 ring-nogal/10 lg:hidden"
+            >
+              {initials(staff.fullName)}
+            </Link>
           </div>
         </header>
         <main className="flex-1 px-4 pt-6 pb-32 sm:px-8 lg:pt-10 lg:pb-14">
