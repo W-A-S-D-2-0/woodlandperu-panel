@@ -6,7 +6,7 @@ import { useStaffSession } from '../../auth/auth-context'
 import { formatDateTime, inCollection, movementLabels, newIdempotencyKey, parseWholeNumber, plural, uniqueCollections } from '../panel-logic'
 import { formatDimensions, movementSign, sortByUrgency, stockStatus } from '../production-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
-import { Badge, CollectionSwitch, EmptyState, Field, inputClass, ModelThumb, Notice, PageHeader, primaryButton, primaryButtonLarge, QueryView, secondaryButton } from '../ui'
+import { Badge, CollectionSwitch, EmptyState, Field, inputClass, listSurface, ModelThumb, Notice, PageHeader, primaryButton, primaryButtonLarge, QueryView, secondaryButton } from '../ui'
 
 type Correction = 'adjustment_in' | 'adjustment_out' | 'return_in'
 
@@ -160,7 +160,7 @@ function StockDetail({ level, isAdmin, onChanged }: { level: InventoryLevel; isA
     setVersion((v) => v + 1)
   }
   return (
-    <div className="grid gap-8 border-t border-linea pt-6">
+    <div className="grid gap-8 border-t border-linea pt-6 sm:pl-[4.5rem]">
       {isAdmin && (
         <section className="grid gap-3">
           <h3 className="text-2xl">Corregir el conteo</h3>
@@ -184,51 +184,69 @@ function StockDetail({ level, isAdmin, onChanged }: { level: InventoryLevel; isA
   )
 }
 
-function StockCard({ level, open, onToggle, isAdmin, onChanged }: { level: InventoryLevel; open: boolean; onToggle: () => void; isAdmin: boolean; onChanged: () => void }) {
-  const status = stockStatus(level)
-  const border = status.state === 'out' ? 'border-2 border-alerta/40' : status.state === 'low' ? 'border-2 border-madera/50' : 'border border-linea'
+/** Columnas de la tabla de stock en laptop: tabla, en el taller, apartadas, libres y la flecha. */
+const stockColumns = 'sm:grid-cols-[auto_minmax(0,1fr)_6.5rem_6.5rem_7rem_2rem]'
+
+const freeTone = { ok: 'text-nogal', low: 'text-aviso', out: 'text-alerta' } as const
+
+function Count({ label, value, className = '' }: { label: string; value: number; className?: string }) {
   return (
-    <li className={`grid gap-5 rounded-2xl bg-white p-5 sm:p-6 ${border}`}>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-        <ModelThumb slug={level.productSlug} className="size-20" />
-        <div className="min-w-0">
-          <p className="font-display text-2xl leading-tight text-nogal">
+    <span className="grid rounded-xl bg-marfil px-3 py-2 sm:bg-transparent sm:p-0 sm:text-right">
+      {/* En laptop la etiqueta ya está en el encabezado de la columna. */}
+      <span className="text-sm whitespace-nowrap text-carbon-600 sm:sr-only">{label}</span>
+      <span className={`text-2xl font-bold tabular-nums ${className}`}>{value}</span>
+    </span>
+  )
+}
+
+/** Una tabla del stock en una fila. Al tocarla se abren sus movimientos y, para administración, la corrección. */
+function StockRow({ level, open, onToggle, isAdmin, onChanged }: { level: InventoryLevel; open: boolean; onToggle: () => void; isAdmin: boolean; onChanged: () => void }) {
+  const status = stockStatus(level)
+  const notes = [level.minStock !== null ? `Aviso en ${level.minStock}` : null, level.custodian ? `Las tiene: ${level.custodian}` : null].filter(Boolean)
+  return (
+    <li className={open ? 'bg-marfil/60' : ''}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-5 py-4 text-left transition-colors hover:bg-marfil sm:px-7 ${stockColumns}`}
+      >
+        <ModelThumb slug={level.productSlug} className="size-14" />
+        <span className="grid min-w-0 justify-items-start gap-0.5">
+          <span className="text-xl leading-snug font-bold text-carbon">
             {level.product} {level.variant}
-          </p>
-          {level.dimensionsLabel && <p className="text-base text-carbon-600">{formatDimensions(level.dimensionsLabel)}</p>}
-          <p className="mt-2">
-            <Badge tone={status.tone}>{status.label}</Badge>
-          </p>
+          </span>
+          <span className="text-base text-carbon-600">{[formatDimensions(level.dimensionsLabel), ...notes].filter(Boolean).join(' · ')}</span>
+          {status.state !== 'ok' && (
+            <span className="mt-1">
+              <Badge tone={status.tone}>{status.label}</Badge>
+            </span>
+          )}
+        </span>
+        {/* En el celular, las tres cifras van en su propia fila debajo del nombre. */}
+        <span className="col-span-3 grid grid-cols-3 gap-2 sm:contents">
+          <Count label="En taller" value={level.onHand} />
+          <Count label="Apartadas" value={level.reserved} />
+          <Count label="Libres" value={level.available} className={freeTone[status.state]} />
+        </span>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          className={`col-start-3 row-start-1 size-6 justify-self-end text-carbon-600 transition-transform sm:col-start-auto sm:row-start-auto ${open ? 'rotate-90' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-5 pb-7 sm:px-7">
+          <StockDetail level={level} isAdmin={isAdmin} onChanged={onChanged} />
         </div>
-        {/* En el celular va en su propia fila: el número grande no aprieta el nombre. */}
-        <div className="col-span-2 flex items-baseline justify-between sm:col-span-1 sm:block sm:text-right">
-          <p className="text-base font-semibold text-carbon-600">Libres para vender</p>
-          <p className={`font-display text-5xl ${status.state === 'ok' ? 'text-nogal' : status.state === 'low' ? 'text-aviso' : 'text-alerta'}`}>{level.available}</p>
-        </div>
-      </div>
-
-      <dl className="grid gap-2 text-lg sm:grid-cols-3">
-        <div className="rounded-xl bg-marfil px-4 py-3">
-          <dt className="text-base text-carbon-600">En el taller</dt>
-          <dd className="text-xl font-bold">{level.onHand}</dd>
-        </div>
-        <div className="rounded-xl bg-marfil px-4 py-3">
-          <dt className="text-base text-carbon-600">Apartadas para pedidos</dt>
-          <dd className="text-xl font-bold">{level.reserved}</dd>
-        </div>
-        <div className="rounded-xl bg-marfil px-4 py-3">
-          <dt className="text-base text-carbon-600">Avisar cuando queden</dt>
-          <dd className="text-xl font-bold">{level.minStock ?? 'Sin aviso'}</dd>
-        </div>
-      </dl>
-      {level.custodian && <p className="-mt-2 text-base text-carbon-600">Las tiene: {level.custodian}</p>}
-
-      <div>
-        <button type="button" className={secondaryButton} aria-expanded={open} onClick={onToggle}>
-          {open ? 'Cerrar' : isAdmin ? 'Ver movimientos y corregir' : 'Ver movimientos'}
-        </button>
-      </div>
-      {open && <StockDetail level={level} isAdmin={isAdmin} onChanged={onChanged} />}
+      )}
     </li>
   )
 }
@@ -261,9 +279,16 @@ export function InventoryPage() {
                 {problems > 0 ? `${plural(problems, 'tabla necesita', 'tablas necesitan')} producción. Están primero en la lista.` : 'Todas las tablas están sobre el mínimo.'}
               </p>
               <CollectionSwitch collections={uniqueCollections(items.map((l) => l.collection))} value={collection} onChange={setCollection} />
-              <ul className="grid gap-4">
+              <ul className={listSurface}>
+                <li aria-hidden="true" className={`hidden gap-x-4 bg-marfil px-7 py-3 text-sm font-bold text-carbon-600 sm:grid ${stockColumns}`}>
+                  <span className="col-span-2">Tabla</span>
+                  <span className="text-right">En el taller</span>
+                  <span className="text-right">Apartadas</span>
+                  <span className="text-right">Libres para vender</span>
+                  <span />
+                </li>
                 {visible.map((l) => (
-                  <StockCard
+                  <StockRow
                     key={l.variantId}
                     level={l}
                     open={openId === l.variantId}

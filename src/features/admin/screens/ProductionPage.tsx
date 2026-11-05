@@ -2,15 +2,15 @@ import { useMemo, useRef, useState } from 'react'
 import type { InventoryLevel, ListResponse } from '../../../../shared/api/panel-contracts'
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle'
 import { filterLevels, formatDimensions, groupByProduct, parseProductionQuantity, PRODUCTION_MAX, stockStatus } from '../production-logic'
-import { newIdempotencyKey } from '../panel-logic'
+import { newIdempotencyKey, plural } from '../panel-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
-import { Badge, EmptyState, inputClass, ModelThumb, Notice, PageHeader, QueryView } from '../ui'
+import { Badge, EmptyState, inputClass, listSurface, ModelThumb, Notice, PageHeader, QueryView } from '../ui'
 
 const bigButton =
   'inline-flex min-h-14 items-center justify-center rounded-2xl px-6 text-lg font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50'
 
-/** Una tabla: cuántas hay en el taller y un registro de producción de dos toques (anotar y confirmar). */
-function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () => void }) {
+/** Anotar producción en dos toques (anotar y confirmar). Se abre dentro de la fila de la tabla. */
+function ProductionForm({ level, onDone }: { level: InventoryLevel; onDone: () => void }) {
   const { run, pending, error, clearError } = useAdminAction()
   const [text, setText] = useState('1')
   const [armed, setArmed] = useState(false)
@@ -20,7 +20,6 @@ function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () =
 
   const quantity = parseProductionQuantity(text)
   const valid = Number.isFinite(quantity)
-  const status = stockStatus(level)
 
   const change = (value: string) => {
     setText(value)
@@ -49,30 +48,10 @@ function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () =
   }
 
   return (
-    <li className="grid gap-4 rounded-2xl border border-linea bg-white p-5">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-        <ModelThumb slug={level.productSlug} className="size-20" />
-        <div className="min-w-0">
-          <p className="font-display text-2xl leading-tight text-nogal">
-            {level.product} {level.variant}
-          </p>
-          {level.dimensionsLabel && <p className="text-base text-carbon-600">{formatDimensions(level.dimensionsLabel)}</p>}
-          {status.state !== 'ok' && (
-            <p className="mt-1">
-              <Badge tone={status.tone}>{status.label}</Badge>
-            </p>
-          )}
-        </div>
-        {/* En el celular va en su propia fila: el número grande no aprieta el nombre. */}
-        <div className="col-span-2 flex items-baseline justify-between rounded-xl bg-marfil px-4 py-2 sm:col-span-1 sm:block sm:bg-transparent sm:p-0 sm:text-right">
-          <p className="text-base font-semibold text-carbon-600">En el taller</p>
-          <p className="font-display text-4xl text-nogal">{level.onHand}</p>
-        </div>
-      </div>
-
+    <div className="grid gap-4">
       <p className="text-lg font-semibold text-carbon">¿Cuántas terminaste?</p>
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-        <button type="button" aria-label="Una menos" className={`${bigButton} w-14 border-2 border-nogal/30 text-2xl text-nogal hover:bg-nogal/5`} onClick={() => step(-1)}>
+        <button type="button" aria-label="Una menos" className={`${bigButton} w-14 border-2 border-nogal/30 bg-white text-2xl text-nogal hover:border-nogal`} onClick={() => step(-1)}>
           −
         </button>
         <input
@@ -82,13 +61,21 @@ function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () =
           value={text}
           onChange={(e) => change(e.target.value)}
         />
-        <button type="button" aria-label="Una más" className={`${bigButton} w-14 border-2 border-nogal/30 text-2xl text-nogal hover:bg-nogal/5`} onClick={() => step(1)}>
+        <button type="button" aria-label="Una más" className={`${bigButton} w-14 border-2 border-nogal/30 bg-white text-2xl text-nogal hover:border-nogal`} onClick={() => step(1)}>
           +
         </button>
       </div>
       <div className="flex gap-2" role="group" aria-label="Cantidades rápidas">
         {[5, 10, 20].map((n) => (
-          <button key={n} type="button" aria-pressed={quantity === n} className="min-h-12 flex-1 rounded-xl border-2 border-linea text-lg font-bold text-nogal hover:border-nogal" onClick={() => change(String(n))}>
+          <button
+            key={n}
+            type="button"
+            aria-pressed={quantity === n}
+            className={`min-h-12 flex-1 rounded-xl border-2 text-lg font-bold transition-colors ${
+              quantity === n ? 'border-nogal bg-white text-nogal' : 'border-linea bg-white text-carbon-600 hover:border-nogal hover:text-nogal'
+            }`}
+            onClick={() => change(String(n))}
+          >
             {n}
           </button>
         ))}
@@ -100,7 +87,7 @@ function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () =
         onClick={() => void register()}
         className={`${bigButton} ${armed ? 'bg-exito text-marfil hover:bg-exito/90' : 'bg-nogal text-marfil hover:bg-nogal-800'}`}
       >
-        {pending ? 'Guardando…' : armed ? `Sí, sumar ${quantity} al taller` : 'Anotar'}
+        {pending ? 'Guardando…' : armed ? `Sí, sumar ${quantity} al taller` : `Anotar ${valid ? plural(quantity, 'tabla') : ''}`}
       </button>
 
       {!valid && <p className="text-base font-semibold text-alerta">Escribe un número entero de 1 a {PRODUCTION_MAX}.</p>}
@@ -115,6 +102,45 @@ function ProductionCard({ level, onDone }: { level: InventoryLevel; onDone: () =
         </p>
       )}
       {error && <Notice>{error}</Notice>}
+    </div>
+  )
+}
+
+/** Un tamaño de un modelo: cuántas hay en el taller y el botón para anotar. El nombre del modelo ya está en el título del grupo. */
+function VariantRow({ level, open, onToggle, onDone }: { level: InventoryLevel; open: boolean; onToggle: () => void; onDone: () => void }) {
+  const status = stockStatus(level)
+  return (
+    <li>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto_9rem] sm:px-6">
+        <div className="grid min-w-0 justify-items-start gap-0.5">
+          <p className="text-xl leading-snug font-bold text-carbon">{level.variant}</p>
+          {level.dimensionsLabel && <p className="text-base text-carbon-600">{formatDimensions(level.dimensionsLabel)}</p>}
+          {status.state !== 'ok' && (
+            <span className="mt-1">
+              <Badge tone={status.tone}>{status.label}</Badge>
+            </span>
+          )}
+        </div>
+        <p className="grid text-right">
+          <span className="text-sm font-semibold text-carbon-600">En el taller</span>
+          <span className="font-display text-4xl leading-tight text-nogal tabular-nums">{level.onHand}</span>
+        </p>
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={onToggle}
+          className={`col-span-2 inline-flex min-h-14 items-center justify-center rounded-2xl px-5 text-lg font-bold transition-colors sm:col-span-1 ${
+            open ? 'border-2 border-linea text-carbon-600 hover:border-nogal' : 'bg-nogal text-marfil hover:bg-nogal-800'
+          }`}
+        >
+          {open ? 'Cerrar' : 'Anotar'}
+        </button>
+      </div>
+      {open && (
+        <div className="border-t border-beige bg-marfil px-5 py-5 sm:px-6">
+          <ProductionForm level={level} onDone={onDone} />
+        </div>
+      )}
     </li>
   )
 }
@@ -126,14 +152,12 @@ export function ProductionPage() {
   const [query, setQuery] = useState('')
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <PageHeader title="Producción" intro="Anota las tablas que terminas. Se suman al stock al instante." />
-      <div className="mt-6">
-        <label className="grid gap-2 text-base">
-          <span className="font-semibold">Buscar una tabla</span>
-          <input className={`${inputClass} min-h-14 text-lg`} type="search" placeholder="Por ejemplo: Moshaco" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
-      </div>
+    <div className="mx-auto grid max-w-3xl gap-6">
+      <PageHeader title="Producción" intro="Toca «Anotar» en la tabla que terminaste. Se suma al stock al instante." />
+      <label className="grid gap-2 text-base">
+        <span className="font-semibold">Buscar una tabla</span>
+        <input className={`${inputClass} min-h-14 text-lg`} type="search" placeholder="Por ejemplo: Moshaco" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </label>
 
       <QueryView state={state} onRetry={reload}>
         {({ items }) => <Results items={items} query={query} onDone={reload} />}
@@ -144,18 +168,32 @@ export function ProductionPage() {
 
 function Results({ items, query, onDone }: { items: InventoryLevel[]; query: string; onDone: () => void }) {
   const groups = useMemo(() => groupByProduct(filterLevels(items, query)), [items, query])
+  // Una sola tabla abierta a la vez: en el celular no se pierde de vista lo que se está anotando.
+  const [openId, setOpenId] = useState<string | null>(null)
 
-  if (items.length === 0) return <div className="mt-6"><EmptyState>Aún no hay tablas en el stock.</EmptyState></div>
-  if (groups.length === 0) return <div className="mt-6"><EmptyState>No hay resultados para esa búsqueda.</EmptyState></div>
+  if (items.length === 0) return <EmptyState>Aún no hay tablas en el stock.</EmptyState>
+  if (groups.length === 0) return <EmptyState>No hay resultados para esa búsqueda.</EmptyState>
 
   return (
-    <div className="mt-6 grid gap-8">
+    <div className="grid gap-10">
       {groups.map((group) => (
-        <section key={group.product} aria-label={group.product}>
-          <h2 className="mb-3 text-2xl">{group.product}</h2>
-          <ul className="grid gap-4">
+        <section key={group.product} aria-label={group.product} className="grid gap-3">
+          <div className="flex items-center gap-4">
+            <ModelThumb slug={group.levels[0]?.productSlug ?? ''} className="size-14" />
+            <div className="grid">
+              <h2 className="text-3xl leading-tight">{group.product}</h2>
+              <p className="text-base text-carbon-600">{plural(group.levels.length, 'tamaño', 'tamaños')}</p>
+            </div>
+          </div>
+          <ul className={listSurface}>
             {group.levels.map((level) => (
-              <ProductionCard key={level.variantId} level={level} onDone={onDone} />
+              <VariantRow
+                key={level.variantId}
+                level={level}
+                open={openId === level.variantId}
+                onToggle={() => setOpenId(openId === level.variantId ? null : level.variantId)}
+                onDone={onDone}
+              />
             ))}
           </ul>
         </section>
