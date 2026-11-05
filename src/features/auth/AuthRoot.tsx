@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet } from 'react-router'
-import { getSupabase } from '../../lib/supabase'
+import { getSupabase, inviteHandled, openedFromInvite } from '../../lib/supabase'
 import { AuthContext, type AuthContextValue, type AuthStatus } from './auth-context'
 
 interface AuthState {
@@ -32,8 +32,8 @@ export function AuthRoot() {
       setState((prev) => ({
         status: session ? 'signed_in' : 'signed_out',
         session,
-        // Quien abre el enlace del correo entra con una sesión de recuperación y debe elegir su contraseña nueva.
-        recovering: session ? event === 'PASSWORD_RECOVERY' || prev.recovering : false,
+        // Quien abre el enlace del correo (recuperación o invitación) entra con sesión y debe elegir su contraseña.
+        recovering: session ? event === 'PASSWORD_RECOVERY' || openedFromInvite() || prev.recovering : false,
       }))
     })
     return () => data.subscription.unsubscribe()
@@ -67,6 +67,7 @@ export function AuthRoot() {
       if (!client) return 'La autenticación no está configurada.'
       const { error } = await client.auth.updateUser({ password })
       if (!error) {
+        inviteHandled()
         setState((prev) => ({ ...prev, recovering: false }))
         return null
       }
