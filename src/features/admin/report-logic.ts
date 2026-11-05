@@ -53,6 +53,32 @@ export function rangeFromParams(params: URLSearchParams, now: Date = new Date())
   return valid.test(from) && valid.test(to) && from <= to ? { from, to } : presetRange('30d', now)
 }
 
+/** Rango rápido que coincide con el elegido; null si son fechas a mano. */
+export function activePreset(range: DateRange, now: Date = new Date()): ReportPreset | null {
+  return reportPresets.find((p) => {
+    const value = presetRange(p.key, now)
+    return value.from === range.from && value.to === range.to
+  })?.key ?? null
+}
+
+export interface BarRow {
+  label: string
+  value: number
+  /** Largo de la barra de 0 a 1, relativo al mayor de la lista. */
+  share: number
+}
+
+/**
+ * Filas de una lista de barras: quita los ceros y mide cada barra contra la mayor.
+ * Con `sort`, de mayor a menor (canales); sin él, se respeta el orden dado (estados del pedido).
+ */
+export function barRows(entries: readonly (readonly [string, number])[], sort = false): BarRow[] {
+  const visible = entries.filter(([, value]) => value > 0)
+  const max = Math.max(0, ...visible.map(([, value]) => value))
+  const rows = visible.map(([label, value]) => ({ label, value, share: max > 0 ? value / max : 0 }))
+  return sort ? rows.sort((a, b) => b.value - a.value) : rows
+}
+
 /** Porcentaje legible ("25 %"), o "—" si no aplica. */
 export function formatPercent(ratio: number | null): string {
   return ratio === null ? '—' : `${Math.round(ratio * 100)} %`

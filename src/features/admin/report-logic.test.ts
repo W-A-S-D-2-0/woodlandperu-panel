@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReportResponse } from '../../../shared/api/panel-contracts'
-import { formatPercent, limaToday, presetRange, rangeFromParams, reportFileName, reportSheetRows, toCsv } from './report-logic'
+import { activePreset, barRows, formatPercent, limaToday, presetRange, rangeFromParams, reportFileName, reportSheetRows, toCsv } from './report-logic'
 
 // 17 oct 2026, 02:00 en UTC = 16 oct, 21:00 en Lima.
 const NOW = new Date('2026-10-17T02:00:00Z')
@@ -70,5 +70,25 @@ describe('exportación CSV', () => {
 
   it('nombra el archivo con la hoja y el rango', () => {
     expect(reportFileName(report, 'pedidos')).toBe('woodland-pedidos-2026-10-01_2026-10-16.csv')
+  })
+})
+
+describe('barras del reporte', () => {
+  it('quita los ceros y mide cada barra contra la mayor', () => {
+    expect(barRows([['Web', 2], ['WhatsApp', 0], ['Panel', 4]])).toEqual([
+      { label: 'Web', value: 2, share: 0.5 },
+      { label: 'Panel', value: 4, share: 1 },
+    ])
+  })
+
+  it('ordena de mayor a menor solo si se pide', () => {
+    expect(barRows([['A', 1], ['B', 3]], true).map((r) => r.label)).toEqual(['B', 'A'])
+    expect(barRows([['A', 0]])).toEqual([])
+  })
+
+  it('reconoce el rango rápido elegido', () => {
+    const now = new Date('2026-11-04T15:00:00Z')
+    expect(activePreset(presetRange('mes', now), now)).toBe('mes')
+    expect(activePreset({ from: '2026-01-01', to: '2026-01-02' }, now)).toBeNull()
   })
 })
