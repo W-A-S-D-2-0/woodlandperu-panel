@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import type { StaffMeResponse } from '../../../shared/api/contracts'
 import { ApiError, apiFetch } from '../../lib/api'
+import { LoadingRings } from '../../components/ui/LoadingRings'
 import { AuthNotice, primaryButtonClass, secondaryButtonClass } from './AuthNotice'
 import { StaffContext, useAuth, type StaffSession } from './auth-context'
 
@@ -77,7 +78,7 @@ export function RequireStaff() {
   if (status === 'loading' || !current || current.kind === 'checking') {
     return (
       <AuthNotice title="Verificando acceso…">
-        <span role="status">Estamos comprobando tu sesión.</span>
+        <LoadingRings label="Estamos comprobando tu sesión." className="mt-6 justify-items-start" />
       </AuthNotice>
     )
   }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { LoadingRings } from '../../components/ui/LoadingRings'
 import { modelPhotos } from '../../content/model-photos'
 import { shortCollectionName, type Collection, type StatusTone, type StepState } from './panel-logic'
 import type { QueryState } from './use-admin-api'
@@ -150,10 +151,8 @@ export function QueryView<T>({
 }) {
   if (state.status === 'loading') {
     return (
-      <div role="status" aria-label="Cargando" className="mt-6 grid gap-3">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-16 animate-pulse rounded-2xl bg-beige/60 motion-reduce:animate-none" />
-        ))}
+      <div className="mt-6 grid place-items-center rounded-3xl bg-beige/50 px-6 py-14">
+        <LoadingRings />
       </div>
     )
   }
