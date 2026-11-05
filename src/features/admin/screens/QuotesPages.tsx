@@ -170,13 +170,15 @@ function QuoteItem({ item, editable, onSaved }: { item: QuoteDetailItem; editabl
         <form onSubmit={(e) => void save(e)} className="flex flex-wrap items-end gap-3" noValidate>
           <label className="grid gap-1 text-base font-semibold">
             Precio por unidad (S/)
-            <input
-              className={`${inputClass} w-40`}
-              inputMode="decimal"
-              value={price}
-              placeholder="0.00"
-              onChange={(e) => setPrice(e.target.value)}
-            />
+            <span className="w-40">
+              <input
+                className={inputClass}
+                inputMode="decimal"
+                value={price}
+                placeholder="0.00"
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </span>
           </label>
           <button type="submit" className={secondaryButton} disabled={pending}>
             {pending ? 'Guardando…' : missing ? 'Guardar precio' : 'Cambiar precio'}

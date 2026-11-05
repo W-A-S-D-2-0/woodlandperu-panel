@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDirectOrder, emptySale, saleSubtotal, suggestedPrice, type SaleLine, type SaleValues } from './direct-sale-logic'
+import { addVariantLine, buildDirectOrder, emptySale, lineTotal, saleSubtotal, saleSummary, stepQuantity, suggestedPrice, type SaleLine, type SaleValues } from './direct-sale-logic'
 
 const VARIANT = '3f2b8c1e-5d4a-4e7b-9a10-2c6d8e9f0a1b'
 const line = (over: Partial<SaleLine> = {}): SaleLine => ({
@@ -74,5 +74,36 @@ describe('precios sugeridos y subtotal', () => {
     const lines = [line({ quantity: '2' }), line({ key: 'b', quantity: '1', unitPrice: '50' }), line({ key: 'c', quantity: '3' })]
     const priceOf = (l: SaleLine) => (l.key === 'c' ? null : 100)
     expect(saleSubtotal(lines, priceOf)).toBe(2 * 100 + 50)
+  })
+})
+
+describe('elegir tablas y resumen', () => {
+  let n = 0
+  const key = () => 'k' + ++n
+
+  it('agrega una tabla nueva y, si ya estaba, sube su cantidad', () => {
+    const once = addVariantLine([], VARIANT, 'Moshaco Large', key)
+    expect(once).toHaveLength(1)
+    expect(once[0]).toMatchObject({ variantId: VARIANT, quantity: '1', label: 'Moshaco Large' })
+    const twice = addVariantLine(once, VARIANT, 'Moshaco Large', key)
+    expect(twice).toHaveLength(1)
+    expect(twice[0]?.quantity).toBe('2')
+  })
+
+  it('la cantidad no baja de 1', () => {
+    expect(stepQuantity(line({ quantity: '1' }), -1).quantity).toBe('1')
+    expect(stepQuantity(line({ quantity: '3' }), 1).quantity).toBe('4')
+    expect(stepQuantity(line({ quantity: 'x' }), 1).quantity).toBe('2')
+  })
+
+  it('calcula el importe de cada fila y el total con descuento', () => {
+    const priceOf = (l: SaleLine) => (l.variantId ? 100 : null)
+    expect(lineTotal(line({ quantity: '2' }), priceOf)).toBe(200)
+    expect(lineTotal(line({ quantity: '2', unitPrice: '90.50' }), priceOf)).toBe(181)
+    expect(lineTotal(line({ variantId: undefined, unitPrice: '' }), priceOf)).toBeNull()
+    const summary = saleSummary([line({ quantity: '2' }), line({ key: 'b', variantId: undefined })], '20', priceOf)
+    expect(summary).toEqual({ subtotal: 200, discount: 20, total: 180, missingPrices: 1 })
+    expect(saleSummary([line({ quantity: '1' })], '500', priceOf).total).toBe(0)
+    expect(saleSummary([line({ quantity: '1' })], 'abc', priceOf).discount).toBe(0)
   })
 })

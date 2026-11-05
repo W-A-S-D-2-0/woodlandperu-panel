@@ -104,3 +104,40 @@ export function buildDirectOrder(values: SaleValues): { ok: true; body: DirectOr
   const messages = [...new Set(parsed.error.issues.map((i) => i.message))]
   return { ok: false, errors: messages }
 }
+
+/** Suma una tabla del catálogo: si ya está en la venta, sube su cantidad en 1 (no repite la fila). */
+export function addVariantLine(lines: readonly SaleLine[], variantId: string, label: string, newKey: () => string): SaleLine[] {
+  const existing = lines.find((l) => l.variantId === variantId)
+  if (existing) {
+    const qty = Number(existing.quantity)
+    return lines.map((l) => (l === existing ? { ...l, quantity: String(Number.isFinite(qty) && qty > 0 ? qty + 1 : 1) } : l))
+  }
+  return [...lines, { key: newKey(), variantId, label, quantity: '1', unitPrice: '', customization: '' }]
+}
+
+/** Cambia la cantidad de una fila en `delta`, sin bajar de 1. */
+export function stepQuantity(line: SaleLine, delta: number): SaleLine {
+  const qty = Number(line.quantity)
+  return { ...line, quantity: String(Math.max(1, (Number.isFinite(qty) && qty > 0 ? qty : 1) + delta)) }
+}
+
+/** Importe de una fila (precio escrito o sugerido por cantidad); null si aún no tiene precio. */
+export function lineTotal(line: SaleLine, priceOf: (line: SaleLine) => number | null): number | null {
+  const qty = Number(line.quantity)
+  const price = parseDecimal(line.unitPrice) ?? priceOf(line)
+  if (!Number.isFinite(qty) || qty <= 0 || price === null || Number.isNaN(price)) return null
+  return Math.round(price * qty * 100) / 100
+}
+
+/** Resumen de la venta: total a cobrar (sin bajar de 0) y cuántas filas aún no tienen precio. */
+export function saleSummary(lines: readonly SaleLine[], discountText: string, priceOf: (line: SaleLine) => number | null) {
+  const subtotal = saleSubtotal(lines, priceOf)
+  const discount = parseDecimal(discountText)
+  const validDiscount = discount !== null && !Number.isNaN(discount) ? discount : 0
+  return {
+    subtotal,
+    discount: validDiscount,
+    total: Math.max(0, Math.round((subtotal - validDiscount) * 100) / 100),
+    missingPrices: lines.filter((l) => lineTotal(l, priceOf) === null).length,
+  }
+}

@@ -84,16 +84,23 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  wrap = false,
 }: {
   label: string
   options: readonly { id: T; label: string; count?: number }[]
   value: T
   onChange: (id: T) => void
+  /** Dentro de una tarjeta: las opciones bajan de línea en vez de deslizarse de lado. */
+  wrap?: boolean
 }) {
   return (
     // En el celular ocupa el ancho de la pantalla y se desliza de lado; no empuja la página.
-    <div role="group" aria-label={label} className="-mx-4 w-screen min-w-0 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:max-w-full sm:px-0">
-      <div className="inline-flex gap-1 rounded-2xl bg-beige p-1.5">
+    <div
+      role="group"
+      aria-label={label}
+      className={wrap ? 'min-w-0' : '-mx-4 w-screen min-w-0 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:max-w-full sm:px-0'}
+    >
+      <div className={`inline-flex gap-1 rounded-2xl bg-beige p-1.5 ${wrap ? 'flex-wrap' : 'sm:flex-wrap'}`}>
         {options.map((o) => {
           const on = o.id === value
           return (

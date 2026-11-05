@@ -56,7 +56,9 @@ function VariantRow({ variant, reload }: { variant: PanelVariant; reload: () => 
         <form onSubmit={(e) => void save(e, parseDecimal(price))} className="grid gap-3 rounded-xl bg-marfil p-4" noValidate>
           <label className="grid gap-2 text-base font-semibold">
             Nuevo precio por unidad (S/)
-            <input className={`${inputClass} w-48 text-xl font-bold`} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <span className="w-48">
+              <input className={`${inputClass} text-xl font-bold`} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+            </span>
           </label>
           <div className="flex flex-wrap items-center gap-3">
             <button type="submit" className={primaryButton} disabled={pending || price.trim() === ''}>
