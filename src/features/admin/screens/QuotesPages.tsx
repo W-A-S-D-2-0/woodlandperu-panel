@@ -20,6 +20,7 @@ import {
   whatsappLink,
   type QuoteFilter,
 } from '../panel-logic'
+import { modelSlugForLine } from '../item-photo-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
 import {
   BackLink,
@@ -31,6 +32,7 @@ import {
   inputClass,
   listRow,
   listSurface,
+  ModelThumb,
   NextStep,
   Notice,
   PageHeader,
@@ -156,11 +158,14 @@ function QuoteItem({ item, editable, onSaved }: { item: QuoteDetailItem; editabl
 
   return (
     <li className={`grid gap-3 rounded-2xl p-4 ${missing && editable ? 'border-2 border-madera/50 bg-aviso-claro' : 'border border-linea'}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="text-xl font-bold">
-          {item.quantity} × {item.description}
-        </p>
-        <p className="text-lg font-bold">{missing ? <span className="text-aviso">Falta precio</span> : formatMoney(item.lineTotal)}</p>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4">
+        <ModelThumb slug={modelSlugForLine(item) ?? ''} className="size-16" />
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className="text-xl leading-snug font-bold">
+            {item.quantity} × {item.description}
+          </p>
+          <p className="text-lg font-bold tabular-nums">{missing ? <span className="text-aviso">Falta precio</span> : formatMoney(item.lineTotal)}</p>
+        </div>
       </div>
       {item.customDimensions && <p className="text-base text-carbon-600">Medidas: {item.customDimensions}</p>}
       {item.customization && (

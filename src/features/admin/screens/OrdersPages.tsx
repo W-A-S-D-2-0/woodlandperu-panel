@@ -19,6 +19,7 @@ import {
   whatsappLink,
   type OrderFilter,
 } from '../panel-logic'
+import { modelSlugForLine } from '../item-photo-logic'
 import { useAdminAction, useAdminQuery } from '../use-admin-api'
 import {
   BackLink,
@@ -30,6 +31,7 @@ import {
   inputClass,
   listRow,
   listSurface,
+  ModelThumb,
   NextStep,
   Notice,
   PageHeader,
@@ -274,20 +276,24 @@ function OrderItems({ order }: { order: OrderDetail }) {
     <Card title="Qué pidió">
       <ul className="grid gap-4">
         {order.items.map((item) => (
-          <li key={item.id} className="grid gap-1 border-b border-linea pb-4 last:border-0 last:pb-0">
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <p className="text-xl font-bold">
-                {item.quantity} × {item.description}
+          <li key={item.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 border-b border-linea pb-4 last:border-0 last:pb-0">
+            {/* La foto ayuda a reconocer la tabla de un vistazo, sobre todo en el taller. */}
+            <ModelThumb slug={modelSlugForLine(item) ?? ''} className="size-16 sm:size-20" />
+            <div className="grid min-w-0 gap-1">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <p className="text-xl leading-snug font-bold">
+                  {item.quantity} × {item.description}
+                </p>
+                <p className="text-lg font-bold tabular-nums">{formatMoney(item.lineTotal)}</p>
+              </div>
+              <p className="text-base text-carbon-600">
+                {formatMoney(item.unitPrice)} cada una{item.fulfillmentType === 'made_to_order' ? ', se fabrica a pedido' : ''}
+                {item.customDimensions ? `. Medidas: ${item.customDimensions}` : ''}
               </p>
-              <p className="text-lg font-bold">{formatMoney(item.lineTotal)}</p>
+              {item.customization && (
+                <p className="mt-1 justify-self-start rounded-xl bg-aviso-claro px-3 py-1.5 text-base font-semibold text-aviso">Grabado: {item.customization}</p>
+              )}
             </div>
-            <p className="text-base text-carbon-600">
-              {formatMoney(item.unitPrice)} cada una{item.fulfillmentType === 'made_to_order' ? ', se fabrica a pedido' : ''}
-              {item.customDimensions ? `. Medidas: ${item.customDimensions}` : ''}
-            </p>
-            {item.customization && (
-              <p className="mt-1 justify-self-start rounded-xl bg-aviso-claro px-3 py-1.5 text-base font-semibold text-aviso">Grabado: {item.customization}</p>
-            )}
           </li>
         ))}
       </ul>
