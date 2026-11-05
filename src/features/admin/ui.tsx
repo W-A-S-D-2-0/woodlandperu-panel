@@ -53,30 +53,8 @@ export function BackLink({ to, children }: { to: string; children: ReactNode }) 
   )
 }
 
-/**
- * Anillos de crecimiento de la teca (el motivo del logo). Decorativos: se dibujan en cobre sobre el nogal.
- * `strength` va de 0 a 1 y controla cuánto se notan.
- */
-export function GrowthRings({ className = '', strength = 1 }: { className?: string; strength?: number }) {
-  const rings = [
-    [22, 17],
-    [44, 35],
-    [68, 54],
-    [92, 73],
-    [118, 94],
-    [146, 116],
-    [176, 139],
-    [208, 164],
-    [242, 190],
-  ] as const
-  return (
-    <svg aria-hidden="true" viewBox="0 0 520 380" className={`pointer-events-none ${className}`} fill="none" stroke="currentColor" strokeWidth="1.6">
-      {rings.map(([rx, ry], i) => (
-        <ellipse key={rx} cx={260 + (i % 2 === 0 ? -2 : 2)} cy={190 + (i % 3) - 1} rx={rx} ry={ry} opacity={(0.55 - i * 0.05) * strength} />
-      ))}
-    </svg>
-  )
-}
+/** Los anillos de la teca viven en components/ui para que también los use el inicio de sesión. */
+export { GrowthRings } from '../../components/ui/GrowthRings'
 
 /** Control segmentado: varias opciones en una sola barra; la elegida se marca en blanco. Con cantidades si se dan. */
 export function Segmented<T extends string>({

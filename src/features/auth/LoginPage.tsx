@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { PUBLIC_SITE_URL } from '../../lib/public-site'
@@ -6,22 +6,66 @@ import { AuthNotice, primaryButtonClass } from './AuthNotice'
 import { MIN_PASSWORD_LENGTH, safeNextPath, useAuth, validateNewPassword } from './auth-context'
 
 const inputClass =
-  'mt-2 block min-h-11 w-full rounded-xl border border-linea bg-white px-4 text-base text-carbon transition-colors placeholder:text-carbon-600/60 focus:border-nogal focus:outline-none'
+  'block min-h-14 w-full rounded-2xl border-2 border-linea bg-white px-4 text-lg text-carbon transition-colors placeholder:text-carbon-600/60 focus:border-nogal focus:outline-none'
 
-const linkClass = 'underline underline-offset-4 hover:text-nogal'
+const linkClass = 'font-semibold text-madera-700 underline underline-offset-4 hover:text-nogal'
+
+/** Botón grande del formulario: ocupa todo el ancho para que se toque fácil en el celular. */
+const submitClass = `${primaryButtonClass} min-h-14 w-full text-lg`
 
 type View = 'login' | 'forgot'
 
-function Field({ label, name, type = 'text', autoComplete, hint }: { label: string; name: string; type?: string; autoComplete?: string; hint?: string }) {
+function Field({
+  label,
+  name,
+  type = 'text',
+  autoComplete,
+  hint,
+  extra,
+}: {
+  label: string
+  name: string
+  type?: string
+  autoComplete?: string
+  hint?: string
+  /** Enlace en la misma línea que la etiqueta (por ejemplo, «¿La olvidaste?»). */
+  extra?: ReactNode
+}) {
   const id = useId()
+  const isPassword = type === 'password'
+  const [visible, setVisible] = useState(false)
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-medium text-carbon">
-        {label}
-      </label>
-      <input id={id} name={name} type={type} autoComplete={autoComplete} required className={inputClass} aria-describedby={hint ? `${id}-hint` : undefined} />
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className="text-base font-bold text-carbon">
+          {label}
+        </label>
+        {extra}
+      </div>
+      <div className="relative mt-2">
+        <input
+          id={id}
+          name={name}
+          type={isPassword && visible ? 'text' : type}
+          autoComplete={autoComplete}
+          required
+          className={`${inputClass} ${isPassword ? 'pr-28' : ''}`}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+        />
+        {isPassword && (
+          // Mostrarla evita errores al escribir: se dice con palabras, no con un ícono de ojo.
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-pressed={visible}
+            className="absolute top-1/2 right-2 inline-flex min-h-11 -translate-y-1/2 items-center rounded-xl px-3 text-base font-bold text-nogal hover:bg-beige"
+          >
+            {visible ? 'Ocultar' : 'Mostrar'}
+          </button>
+        )}
+      </div>
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-carbon-600">
+        <p id={`${id}-hint`} className="mt-1.5 text-base text-carbon-600">
           {hint}
         </p>
       )}
@@ -30,7 +74,10 @@ function Field({ label, name, type = 'text', autoComplete, hint }: { label: stri
 }
 
 const Message = ({ tone, children }: { tone: 'error' | 'ok'; children: string }) => (
-  <p role={tone === 'error' ? 'alert' : 'status'} className={`rounded-xl px-4 py-3 text-sm text-carbon ${tone === 'error' ? 'bg-beige' : 'border border-nogal/30 bg-white'}`}>
+  <p
+    role={tone === 'error' ? 'alert' : 'status'}
+    className={`rounded-2xl px-5 py-4 text-base font-semibold ${tone === 'error' ? 'bg-alerta-claro text-alerta' : 'bg-exito-claro text-exito'}`}
+  >
     {children}
   </p>
 )
@@ -127,7 +174,7 @@ export function LoginPage() {
           <Field label="Contraseña nueva" name="password" type="password" autoComplete="new-password" hint={passwordHint} />
           <Field label="Repite la contraseña" name="repeat" type="password" autoComplete="new-password" />
           {feedback}
-          <button type="submit" className={primaryButtonClass} disabled={submitting}>
+          <button type="submit" className={submitClass} disabled={submitting}>
             {submitLabel('Guardar contraseña', 'Guardando…')}
           </button>
         </form>
@@ -136,41 +183,51 @@ export function LoginPage() {
   }
 
   return (
-    <AuthNotice title={view === 'forgot' ? 'Restablecer contraseña' : 'Panel de Woodland'}>
+    <AuthNotice title={view === 'forgot' ? 'Restablecer contraseña' : 'Ingresar al panel'}>
       {view === 'login' && (
-        <form className="mt-6 grid gap-5" onSubmit={onLogin} noValidate>
-          <Field label="Correo" name="email" type="email" autoComplete="username" />
-          <Field label="Contraseña" name="password" type="password" autoComplete="current-password" />
-          {feedback}
-          <button type="submit" className={primaryButtonClass} disabled={submitting || status === 'loading'}>
-            {submitLabel('Ingresar', 'Ingresando…')}
-          </button>
-          <button type="button" className={`${linkClass} justify-self-start text-xs`} onClick={() => go('forgot')}>
-            ¿Olvidaste tu contraseña?
-          </button>
-          <p className="text-xs">¿Aún no tienes cuenta? Pídela a administración de Woodland.</p>
-        </form>
+        <>
+          <p>Usa el correo y la contraseña de tu cuenta de Woodland.</p>
+          <form className="mt-7 grid gap-5" onSubmit={onLogin} noValidate>
+            <Field label="Correo" name="email" type="email" autoComplete="username" />
+            <Field
+              label="Contraseña"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              extra={
+                <button type="button" className={`${linkClass} text-base`} onClick={() => go('forgot')}>
+                  ¿La olvidaste?
+                </button>
+              }
+            />
+            {feedback}
+            <button type="submit" className={`${submitClass} mt-2`} disabled={submitting || status === 'loading'}>
+              {submitLabel('Ingresar', 'Ingresando…')}
+            </button>
+          </form>
+        </>
       )}
 
       {view === 'forgot' && (
-        <form className="mt-6 grid gap-5" onSubmit={onForgot} noValidate>
+        <form className="mt-6 grid gap-6" onSubmit={onForgot} noValidate>
           <p>Escribe tu correo y te enviamos un enlace para elegir una contraseña nueva.</p>
           <Field label="Correo" name="email" type="email" autoComplete="username" />
           {feedback}
-          <button type="submit" className={primaryButtonClass} disabled={submitting}>
+          <button type="submit" className={submitClass} disabled={submitting}>
             {submitLabel('Enviar enlace', 'Enviando…')}
           </button>
-          <button type="button" className={`${linkClass} justify-self-start text-xs`} onClick={() => go('login')}>
-            ← Volver a iniciar sesión
+          <button type="button" className={`${linkClass} justify-self-start text-base`} onClick={() => go('login')}>
+            Volver a iniciar sesión
           </button>
         </form>
       )}
 
-      <p className="mt-8 text-xs">
-        <a href={PUBLIC_SITE_URL} className={linkClass}>
+      <div className="mt-8 grid gap-2 border-t border-linea pt-6 text-base">
+        {view === 'login' && <p>¿Aún no tienes cuenta? Pídela a administración de Woodland.</p>}
+        <a href={PUBLIC_SITE_URL} className={`${linkClass} justify-self-start`}>
           Ir a la web pública
         </a>
-      </p>
+      </div>
     </AuthNotice>
   )
 }
