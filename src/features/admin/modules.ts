@@ -72,14 +72,6 @@ export const adminModules: readonly AdminModule[] = [
     planned: ['Registro de conversaciones', 'Conversaciones derivadas a humano', 'Cotizaciones originadas por el asistente'],
   },
   {
-    slug: 'citas',
-    roles: ['admin'],
-    label: 'Citas',
-    phase: 'Fase 4',
-    description: 'Citas que los clientes agendan en el chat para hablar con la administración.',
-    planned: ['Día, hora y celular de cada cita', 'Marcar como atendida o cancelada'],
-  },
-  {
     slug: 'reportes',
     roles: ['admin'],
     label: 'Reportes',
@@ -110,7 +102,7 @@ export const adminSections: readonly AdminSectionDef[] = [
   { slug: 'hoy', label: 'Hoy', shortLabel: 'Hoy', modules: [] },
   { slug: 'taller', label: 'Taller y stock', shortLabel: 'Taller', modules: ['produccion', 'inventario'] },
   { slug: 'ventas', label: 'Ventas', shortLabel: 'Ventas', modules: ['pedidos', 'cotizaciones'] },
-  { slug: 'clientes', label: 'Clientes y chats', shortLabel: 'Clientes', modules: ['clientes', 'conversaciones', 'citas'] },
+  { slug: 'clientes', label: 'Clientes y chats', shortLabel: 'Clientes', modules: ['clientes', 'conversaciones'] },
   { slug: 'mas', label: 'Productos y reportes', shortLabel: 'Más', modules: ['productos', 'reportes'] },
 ]
 

@@ -7,7 +7,6 @@ export interface TodayInput {
   /** null mientras carga: no se muestra ni como tarea ni como «en orden». */
   ordersToCollect: number | null
   conversationsWaiting: number | null
-  appointmentsPending: number | null
 }
 
 export interface TodayTask {
@@ -93,17 +92,6 @@ const defs: TaskDef[] = [
     action: 'Leer chats',
     to: '/conversaciones?estado=esperan',
     calm: 'Chats revisados',
-  },
-  {
-    id: 'citas',
-    count: (i) => i.appointmentsPending,
-    tone: 'warn',
-    icon: 'citas',
-    title: (n) => one(n, '1 cita por atender', '{n} citas por atender'),
-    detail: 'Clientes que esperan tu llamada.',
-    action: 'Ver citas',
-    to: '/citas',
-    calm: 'Sin citas pendientes',
   },
 ]
 

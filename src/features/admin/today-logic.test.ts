@@ -7,7 +7,6 @@ const calmDay: TodayInput = {
   ordersToConfirm: 0,
   ordersToCollect: 0,
   conversationsWaiting: 0,
-  appointmentsPending: 0,
 }
 
 describe('todayTasks', () => {
@@ -15,7 +14,7 @@ describe('todayTasks', () => {
     const { tasks, calm } = todayTasks(calmDay)
     expect(tasks).toEqual([])
     expect(calm).toContain('Stock sobre el mínimo')
-    expect(calm).toHaveLength(6)
+    expect(calm).toHaveLength(5)
   })
 
   it('pone primero el stock bajo y concuerda singular y plural', () => {

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import type { AppointmentItem, ConversationListItem, DashboardResponse, ListResponse, OrderListItem } from '../../../shared/api/panel-contracts'
+import type { ConversationListItem, DashboardResponse, ListResponse, OrderListItem } from '../../../shared/api/panel-contracts'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { useStaffSession } from '../auth/auth-context'
 import { NavIcon } from './nav-icons'
@@ -50,7 +50,6 @@ function Today({ data, header }: { data: DashboardResponse; header: (pending: st
   const count = <T,>(state: { status: string; data?: ListResponse<T> }, keep: (item: T) => boolean = () => true) =>
     state.status === 'ok' && state.data ? state.data.items.filter(keep).length : null
   const { state: waiting } = useAdminQuery<ListResponse<ConversationListItem>>('/conversations?status=needs_human')
-  const { state: appointments } = useAdminQuery<ListResponse<AppointmentItem>>('/appointments?status=pending')
   const { state: orders } = useAdminQuery<ListResponse<OrderListItem>>('/orders')
 
   const { tasks, calm } = todayTasks({
@@ -59,7 +58,6 @@ function Today({ data, header }: { data: DashboardResponse; header: (pending: st
     ordersToConfirm: data.ordersByStatus.pending_confirmation ?? 0,
     ordersToCollect: count(orders, needsPayment),
     conversationsWaiting: count(waiting),
-    appointmentsPending: count(appointments),
   })
   const inWorkshop = data.ordersByStatus.in_production ?? 0
 
